@@ -23,7 +23,13 @@ namespace SolveSpace {
 
 // The paths in __FILE__ are from the build system, but defined(WIN32) returns
 // the value for the host system.
-#define BUILD_PATH_SEP (__FILE__[0]=='/' ? '/' : '\\')
+static char InitBuildPathSep() {
+    if (std::string(__FILE__).find('\\') != std::string::npos) {
+        return '\\';
+    }
+    return '/';
+}
+static char BUILD_PATH_SEP = InitBuildPathSep();
 
 static std::string BuildRoot() {
     static std::string rootDir;
