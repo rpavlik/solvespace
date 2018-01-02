@@ -89,7 +89,8 @@ include_directories(
     ${PNG_PNG_INCLUDE_DIR}
     ${FREETYPE_INCLUDE_DIRS}
     ${CAIRO_INCLUDE_DIRS}
-    ${Q3D_INCLUDE_DIR})
+    ${Q3D_INCLUDE_DIR}
+    ${EIGEN3_INCLUDE_DIRS})
 
 if(Backtrace_FOUND)
     include_directories(
