@@ -99,6 +99,10 @@ endif()
 message(STATUS "Using in-tree libdxfrw")
 add_subdirectory(extlib/libdxfrw)
 
+message(STATUS "Using in-tree Eigen")
+set(EIGEN3_FOUND             YES)
+set(EIGEN3_INCLUDE_DIRS      ${CMAKE_SOURCE_DIR}/extlib/eigen)
+
 if(WIN32)
     include(FindVendoredPackage)
     include(AddVendoredSubdirectory)

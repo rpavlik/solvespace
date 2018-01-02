@@ -73,7 +73,8 @@ include_directories(
     ${ZLIB_INCLUDE_DIR}
     ${PNG_PNG_INCLUDE_DIR}
     ${FREETYPE_INCLUDE_DIRS}
-    ${CAIRO_INCLUDE_DIRS})
+    ${CAIRO_INCLUDE_DIRS}
+    ${EIGEN3_INCLUDE_DIRS})
 
 if(SPACEWARE_FOUND)
     include_directories(
