@@ -297,8 +297,12 @@ public:
     int   n;
     int   elemsAllocated;
 
+    bool IsEmpty() const {
+        return n == 0;
+    }
+
     uint32_t MaximumId() {
-        if(n == 0) {
+        if(IsEmpty()) {
             return 0;
         } else {
             return elem[n - 1].h.v;
@@ -357,6 +361,9 @@ public:
     }
 
     int IndexOf(H h) {
+        if(IsEmpty()) {
+            return -1;
+        }
         int first = 0, last = n-1;
         while(first <= last) {
             int mid = (first + last)/2;
@@ -373,6 +380,9 @@ public:
     }
 
     T *FindByIdNoOops(H h) {
+        if(IsEmpty()) {
+            return nullptr;
+        }
         int first = 0, last = n-1;
         while(first <= last) {
             int mid = (first + last)/2;
@@ -389,10 +399,10 @@ public:
     }
 
     T *First() {
-        return (n == 0) ? NULL : &(elem[0]);
+        return (IsEmpty()) ? NULL : &(elem[0]);
     }
     T *NextAfter(T *prev) {
-        if(!prev) return NULL;
+        if(IsEmpty() || !prev) return NULL;
         if(prev - elem == (n - 1)) return NULL;
         return prev + 1;
     }

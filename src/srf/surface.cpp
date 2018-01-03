@@ -1057,7 +1057,7 @@ void SShell::TriangulateInto(SMesh *sm) {
 }
 
 bool SShell::IsEmpty() const {
-    return (surface.n == 0);
+    return surface.IsEmpty();
 }
 
 void SShell::Clear() {
