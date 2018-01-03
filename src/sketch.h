@@ -504,6 +504,15 @@ public:
         actDistance(), actVisible(), style(), construction(),
         beziers(), edges(), edgesChordTol(), screenBBox(), screenBBoxValid() {};
 
+    // Default move-construction
+    Entity(Entity && other) = default;
+    // Default copy-construction
+    Entity(Entity const& other) = default;
+    // Default move-assignment
+    Entity & operator=(Entity && other) = default;
+    // Default copy-assignment
+    Entity & operator=(Entity const& other) = default;
+
     // A linked entity that was hidden in the source file ends up hidden
     // here too.
     bool        forceHidden;
