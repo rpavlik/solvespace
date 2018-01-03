@@ -804,13 +804,14 @@ void Group::MakeExtrusionTopBottomFaces(IdList<Entity,hEntity> *el, hEntity pt)
     el->Add(&en);
 }
 
-void Group::CopyEntity(IdList<Entity,hEntity> *el,
+void Group::CopyEntity(Entity *dest,
                        Entity *ep, int timesApplied, int remap,
                        hParam dx, hParam dy, hParam dz,
                        hParam qw, hParam qvx, hParam qvy, hParam qvz,
                        CopyAs as)
 {
-    Entity en = {};
+    Entity & en = *dest;
+    en = Entity{};
     en.type = ep->type;
     en.extraPoints = ep->extraPoints;
     en.h = Remap(ep->h, remap);
@@ -936,7 +937,26 @@ void Group::CopyEntity(IdList<Entity,hEntity> *el,
     // came from a copy (e.g. step and repeat) of a force-hidden linked
     // entity, then we also want to hide it.
     en.forceHidden = (!ep->actVisible) || ep->forceHidden;
+}
 
+void Group::CopyEntity(EntityList *el,
+    Entity *ep, int timesApplied, int remap,
+    hParam dx, hParam dy, hParam dz,
+    hParam qw, hParam qvx, hParam qvy, hParam qvz,
+    CopyAs as)
+{
+    Entity en;
+    CopyEntity(&en, ep, timesApplied, remap, dx, dy, dz, qw, qvx, qvy, qvz, as);
     el->Add(&en);
 }
 
+void Group::CopyEntity(EntityListAdditions *el,
+    Entity *ep, int timesApplied, int remap,
+    hParam dx, hParam dy, hParam dz,
+    hParam qw, hParam qvx, hParam qvy, hParam qvz,
+    CopyAs as)
+{
+    Entity en;
+    CopyEntity(&en, ep, timesApplied, remap, dx, dy, dz, qw, qvx, qvy, qvz, as);
+    el->Add(std::move(en));
+}

@@ -255,7 +255,17 @@ public:
     void MakeExtrusionLines(EntityList *el, hEntity in);
     void MakeLatheCircles(IdList<Entity,hEntity> *el, IdList<Param,hParam> *param, hEntity in, Vector pt, Vector axis, int ai);
     void MakeExtrusionTopBottomFaces(EntityList *el, hEntity pt);
+    void CopyEntity(Entity *dest,
+        Entity *ep, int timesApplied, int remap,
+        hParam dx, hParam dy, hParam dz,
+        hParam qw, hParam qvx, hParam qvy, hParam qvz,
+        CopyAs as);
     void CopyEntity(EntityList *el,
+        Entity *ep, int timesApplied, int remap,
+        hParam dx, hParam dy, hParam dz,
+        hParam qw, hParam qvx, hParam qvy, hParam qvz,
+        CopyAs as);
+    void CopyEntity(EntityListAdditions *el,
                     Entity *ep, int timesApplied, int remap,
                     hParam dx, hParam dy, hParam dz,
                     hParam qw, hParam qvx, hParam qvy, hParam qvz,
