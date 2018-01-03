@@ -274,7 +274,9 @@ bool System::SolveLeastSquares() {
     mapMatrix(mat.AAt, mat.m, mat.m) = A * A.transpose();
 
     if(!SolveLinearSystem(mat.Z, mat.AAt, mat.B.num, mat.m)) return false;
-
+#if 0
+    mapVector(mat.X, mat.n) = (mapVector(mat.Z, mat.n) * A.transpose()).cwiseProduct(mapVector(mat.scale, mat.n));
+#else
     // And multiply that by A' to get our solution.
     for(c = 0; c < mat.n; c++) {
         double sum = 0;
@@ -283,6 +285,7 @@ bool System::SolveLeastSquares() {
         }
         mat.X[c] = sum * mat.scale[c];
     }
+#endif
     return true;
 }
 
