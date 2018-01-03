@@ -368,6 +368,7 @@ void Group::Generate(IdList<Entity,hEntity> *entity,
             return;
 
         case Type::DRAWING_WORKPLANE: {
+            EntityListAdditions entityAdditions;
             Quaternion q;
             if(subtype == Subtype::WORKPLANE_BY_LINE_SEGMENTS) {
                 Vector u = SK.GetEntity(predef.entityB)->VectorGetNum();
@@ -391,7 +392,6 @@ void Group::Generate(IdList<Entity,hEntity> *entity,
             normal.point[0] = h.entity(2);
             normal.group = h;
             normal.h = h.entity(1);
-            entity->Add(&normal);
 
             Entity point = {};
             point.type = Entity::Type::POINT_N_COPY;
@@ -399,7 +399,6 @@ void Group::Generate(IdList<Entity,hEntity> *entity,
             point.construction = true;
             point.group = h;
             point.h = h.entity(2);
-            entity->Add(&point);
 
             Entity wp = {};
             wp.type = Entity::Type::WORKPLANE;
@@ -407,7 +406,10 @@ void Group::Generate(IdList<Entity,hEntity> *entity,
             wp.point[0] = point.h;
             wp.group = h;
             wp.h = h.entity(0);
-            entity->Add(&wp);
+            entityAdditions.Add(std::move(point));
+            entityAdditions.Add(std::move(normal));
+            entityAdditions.Add(std::move(wp));
+            entityAdditions.MoveIntoList(entity);
             return;
         }
 
