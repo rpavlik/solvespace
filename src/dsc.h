@@ -285,6 +285,59 @@ public:
     }
 };
 
+// Comparison functor used by IdList and related classes
+template <class T, class H>
+struct CompareId {
+    bool operator()(T const& lhs, T const& rhs) const {
+        return lhs.h.v < rhs.h.v;
+    }
+    bool operator()(T const& lhs, H rhs) const {
+        return lhs.h.v < rhs.v;
+    }
+};
+namespace detail {
+    struct ConstructThenMove {
+        template<typename T>
+        void operator()(T * storage, T && src) const {
+            new(storage) T();
+            *storage = std::move(src);
+        }
+    };
+    struct UseMoveConstructor {
+        template<typename T>
+        void operator()(T * storage, T && src) const {
+            new(storage) T(std::move(src));
+        }
+    };
+    struct ConstructThenCopy {
+        template<typename T>
+        void operator()(T * storage, T const& src) const {
+            new(storage) T();
+            *storage = src;
+        }
+    };
+    struct UseCopyConstructor {
+        template<typename T>
+        void operator()(T * storage, T const& src) const {
+            new(storage) T(src);
+        }
+    };
+    struct CannotCopy {
+        template<typename T>
+        void operator()(T * storage, T const& src) const {
+            static_assert(false, "Type cannot be copied by assignment or construction");
+        }
+    };
+    template<typename T>
+    using CopyPolicy = typename std::conditional<std::is_copy_constructible<T>::value, UseCopyConstructor, typename std::conditional<std::is_copy_assignable<T>::value, ConstructThenCopy, CannotCopy>::type>::type;
+    template<typename T>
+    using MovePolicy = typename std::conditional<std::is_move_constructible<T>::value, UseMoveConstructor, // move construct if we can
+        typename std::conditional<std::is_move_assignable<T>::value, ConstructThenMove, // Move assign if we can but can't move-construct
+        CopyPolicy<T> // otherwise fall back to copy
+        >::type>::type;
+
+}
+
 // A list, where each element has an integer identifier. The list is kept
 // sorted by that identifier, and items can be looked up in log n time by
 // id.
@@ -295,6 +348,7 @@ public:
     int   n;
     int   elemsAllocated;
 
+    using CompareId = CompareId<T, H>;
     uint32_t MaximumId() {
         if(n == 0) {
             return 0;
@@ -308,6 +362,28 @@ public:
         Add(t);
 
         return t->h;
+    }
+
+    T * lower_bound(T const& t) {
+        if (n == 0) {
+            return nullptr;
+        }
+        auto it = std::lower_bound(begin(), end(), t, CompareId());
+        return it;
+    }
+    T * lower_bound(H const& h) {
+        if (n == 0) {
+            return nullptr;
+        }
+        auto it = std::lower_bound(begin(), end(), h, CompareId());
+        return it;
+    }
+    std::size_t lower_bound_index(T const& t) {
+        if (n == 0) {
+            return 0;
+        }
+        auto it = lower_bound(t);
+        return std::distance(begin(), it);
     }
 
     void ReserveMore(int howMuch) {
@@ -327,21 +403,12 @@ public:
         if(n >= elemsAllocated) {
             ReserveMore((elemsAllocated + 32)*2 - n);
         }
-    
-        int first = 0, last = n;
-        // We know that we must insert within the closed interval [first,last]
-        while(first != last) {
-            int mid = (first + last)/2;
-            H hm = elem[mid].h;
+        auto newIndex = lower_bound_index(*t);
+        if (newIndex < n) {
+            H hm = elem[newIndex].h;
             ssassert(hm.v != t->h.v, "Handle isn't unique");
-            if(hm.v > t->h.v) {
-                last = mid;
-            } else if(hm.v < t->h.v) {
-                first = mid + 1;
-            }
         }
-
-        int i = first;
+        int i = static_cast<int>(newIndex);
         new(&elem[n]) T();
         std::move_backward(elem + i, elem + n, elem + n + 1);
         elem[i] = *t;
@@ -355,35 +422,28 @@ public:
     }
 
     int IndexOf(H h) {
-        int first = 0, last = n-1;
-        while(first <= last) {
-            int mid = (first + last)/2;
-            H hm = elem[mid].h;
-            if(hm.v > h.v) {
-                last = mid-1; // and first stays the same
-            } else if(hm.v < h.v) {
-                first = mid+1; // and last stays the same
-            } else {
-                return mid;
-            }
+        if (n == 0) {
+            return -1;
+        }
+        auto idx = lower_bound_index(*t);
+        if (idx < n) {
+            return idx;
         }
         return -1;
     }
 
     T *FindByIdNoOops(H h) {
-        int first = 0, last = n-1;
-        while(first <= last) {
-            int mid = (first + last)/2;
-            H hm = elem[mid].h;
-            if(hm.v > h.v) {
-                last = mid-1; // and first stays the same
-            } else if(hm.v < h.v) {
-                first = mid+1; // and last stays the same
-            } else {
-                return &(elem[mid]);
-            }
+        if (n == 0) {
+            return nullptr;
         }
-        return NULL;
+        auto it = lower_bound(h);
+        if (it == nullptr || it == end()) {
+            return nullptr;
+        }
+        if (it->h.v == h.v) {
+            return it;
+        }
+        return nullptr;
     }
 
     T *First() {
@@ -408,11 +468,9 @@ public:
     }
 
     void Tag(H h, int tag) {
-        int i;
-        for(i = 0; i < n; i++) {
-            if(elem[i].h.v == h.v) {
-                elem[i].tag = tag;
-            }
+        auto it = FindByIdNoOops(h);
+        if (it != nullptr) {
+            it->tag = tag;
         }
     }
 
@@ -451,8 +509,10 @@ public:
     void DeepCopyInto(IdList<T,H> *l) {
         l->Clear();
         l->elem = (T *)MemAlloc(elemsAllocated * sizeof(elem[0]));
-        for(int i = 0; i < n; i++)
-            new(&l->elem[i]) T(elem[i]);
+        detail::CopyPolicy<T> constructAndCopy;
+        for (int i = 0; i < n; i++) {
+            constructAndCopy(&l->elem[i], elem[i]);
+        }
         l->elemsAllocated = elemsAllocated;
         l->n = n;
     }
@@ -462,8 +522,10 @@ public:
             elem[i].Clear();
             elem[i].~T();
         }
-        elemsAllocated = n = 0;
+        n = 0;
         if(elem) MemFree(elem);
+
+        elemsAllocated = 0;
         elem = NULL;
     }
 
