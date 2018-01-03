@@ -5,6 +5,7 @@
 // Copyright 2008-2013 Jonathan Westhues.
 //-----------------------------------------------------------------------------
 #include "solvespace.h"
+#include "utileigen.h"
 
 std::string SolveSpace::ssprintf(const char *fmt, ...)
 {
@@ -567,8 +568,8 @@ Vector Vector::InPerspective(Vector u, Vector v, Vector n,
 }
 
 double Vector::DistanceToLine(Vector p0, Vector dp) const {
-    double m = dp.Magnitude();
-    return ((this->Minus(p0)).Cross(dp)).Magnitude() / m;
+    // call free function implementing this using Eigen
+    return SolveSpace::DistanceToLine(*this, p0, dp);
 }
 
 double Vector::DistanceToPlane(Vector normal, Vector origin) const {
