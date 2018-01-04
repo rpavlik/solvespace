@@ -392,13 +392,6 @@ public:
         return t->h;
     }
 
-    T * lower_bound(T const& t) {
-        if (IsEmpty()) {
-            return nullptr;
-        }
-        auto it = std::lower_bound(begin(), end(), t, CompareId());
-        return it;
-    }
     T * lower_bound(H const& h) {
         if (IsEmpty()) {
             return nullptr;
