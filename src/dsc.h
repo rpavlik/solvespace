@@ -406,9 +406,8 @@ public:
     }
 
     void ClearTags() {
-        int i;
-        for(i = 0; i < n; i++) {
-            elem[i].tag = 0;
+        for(auto & elt : *this) {
+            elt.tag = 0;
         }
     }
 

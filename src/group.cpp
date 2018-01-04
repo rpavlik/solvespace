@@ -284,8 +284,8 @@ void Group::MenuGroup(Command id, Platform::Path linkFile) {
     SS.UndoRemember();
 
     bool afterActive = false;
-    for(int i = 0; i < SK.groupOrder.n; i++) {
-        Group *gi = SK.GetGroup(SK.groupOrder.elem[i]);
+    for(hGroup hg : SK.groupOrder) {
+        Group *gi = SK.GetGroup(hg);
         if(afterActive)
             gi->order += 1;
         if(gi->h.v == SS.GW.activeGroup.v) {
@@ -448,6 +448,7 @@ void Group::Generate(IdList<Entity,hEntity> *entity,
             // Get some arbitrary point in the sketch, that will be used
             // as a reference when defining top and bottom faces.
             hEntity pt = { 0 };
+            // Not using range-for here because we're changing the size of entity in the loop.
             for(i = 0; i < entity->n; i++) {
                 Entity *e = &(entity->elem[i]);
                 if(e->group.v != opA.v) continue;
@@ -481,6 +482,7 @@ void Group::Generate(IdList<Entity,hEntity> *entity,
             // Remapped entity index.
             int ai = 1;
 
+            // Not using range-for here because we're changing the size of entity in the loop.
             for(i = 0; i < entity->n; i++) {
                 Entity *e = &(entity->elem[i]);
                 if(e->group.v != opA.v) continue;
@@ -576,6 +578,7 @@ void Group::Generate(IdList<Entity,hEntity> *entity,
             }
 
             for(a = a0; a < n; a++) {
+                // Not using range-for here because we're changing the size of entity in the loop.
                 for(i = 0; i < entity->n; i++) {
                     Entity *e = &(entity->elem[i]);
                     if(e->group.v != opA.v) continue;
@@ -611,6 +614,7 @@ void Group::Generate(IdList<Entity,hEntity> *entity,
             }
 
             for(a = a0; a < n; a++) {
+                // Not using range-for here because we're changing the size of entity in the loop.
                 for(i = 0; i < entity->n; i++) {
                     Entity *e = &(entity->elem[i]);
                     if(e->group.v != opA.v) continue;
@@ -637,6 +641,7 @@ void Group::Generate(IdList<Entity,hEntity> *entity,
             AddParam(param, h.param(5), 0);
             AddParam(param, h.param(6), 0);
 
+            // Not using range-for here because we're changing the size of entity in the loop.
             for(i = 0; i < impEntity.n; i++) {
                 Entity *ie = &(impEntity.elem[i]);
                 CopyEntity(entity, ie, 0, 0,

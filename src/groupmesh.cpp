@@ -14,13 +14,12 @@ void Group::AssembleLoops(bool *allClosed,
     SBezierList sbl = {};
 
     int i;
-    for(i = 0; i < SK.entity.n; i++) {
-        Entity *e = &(SK.entity.elem[i]);
-        if(e->group.v != h.v) continue;
-        if(e->construction) continue;
-        if(e->forceHidden) continue;
+    for(auto & e : SK.entity) {
+        if(e.group.v != h.v) continue;
+        if(e.construction) continue;
+        if(e.forceHidden) continue;
 
-        e->GenerateBezierCurves(&sbl);
+        e.GenerateBezierCurves(&sbl);
     }
 
     SBezier *sb;
@@ -235,6 +234,7 @@ void Group::GenerateShellAndMesh() {
             // that face, so that the user can select them with the mouse.
             Vector onOrig = sbls->point;
             int i;
+            // Not using range-for here because we're starting at a different place and using indices for meaning.
             for(i = is; i < thisShell.surface.n; i++) {
                 SSurface *ss = &(thisShell.surface.elem[i]);
                 hEntity face = Entity::NO_ENTITY;
@@ -466,13 +466,15 @@ void Group::GenerateDisplayItems() {
 }
 
 Group *Group::PreviousGroup() const {
-    int i;
-    for(i = 0; i < SK.groupOrder.n; i++) {
-        Group *g = SK.GetGroup(SK.groupOrder.elem[i]);
-        if(g->h.v == h.v) break;
+    Group *prev = nullptr;
+    for(auto const &gh : SK.groupOrder) {
+        Group *g = SK.GetGroup(gh);
+        if(g->h.v == h.v) {
+            return prev;
+        }
+        prev = g;
     }
-    if(i == 0 || i >= SK.groupOrder.n) return NULL;
-    return SK.GetGroup(SK.groupOrder.elem[i - 1]);
+    return nullptr;
 }
 
 Group *Group::RunningMeshGroup() const {
