@@ -323,14 +323,13 @@ namespace detail {
             new(storage) T(src);
         }
     };
+    template<typename T>
     struct CannotCopy {
-        template<typename T>
-        void operator()(...) const {
-            static_assert(false, "Type cannot be copied by assignment or construction");
-        }
+        static_assert(std::is_copy_constructible<T>::value || std::is_copy_assignable<T>::value,
+            "Type cannot be copied by assignment or construction");
     };
     template<typename T>
-    using CopyPolicy = typename std::conditional<std::is_copy_constructible<T>::value, UseCopyConstructor, typename std::conditional<std::is_copy_assignable<T>::value, ConstructThenCopy, CannotCopy>::type>::type;
+    using CopyPolicy = typename std::conditional<std::is_copy_constructible<T>::value, UseCopyConstructor, typename std::conditional<std::is_copy_assignable<T>::value, ConstructThenCopy, CannotCopy<T> >::type>::type;
     template<typename T>
     using MovePolicy = typename std::conditional<std::is_move_constructible<T>::value, UseMoveConstructor, // move construct if we can
         typename std::conditional<std::is_move_assignable<T>::value, ConstructThenMove, // Move assign if we can but can't move-construct
@@ -352,7 +351,7 @@ namespace detail {
         }
     };
     template<typename T>
-    using AddEmplacePolicy = typename std::conditional<std::is_copy_constructible<T>::value, EmplaceCopy, typename std::conditional<std::is_copy_assignable<T>::value, EmplaceThenAssign, CannotCopy>::type>::type;
+    using AddEmplacePolicy = typename std::conditional<std::is_copy_constructible<T>::value, EmplaceCopy, typename std::conditional<std::is_copy_assignable<T>::value, EmplaceThenAssign, CannotCopy<T>>::type>::type;
 }
 
 // A list, where each element has an integer identifier. The list is kept
