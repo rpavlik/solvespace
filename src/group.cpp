@@ -422,6 +422,7 @@ void Group::Generate(IdList<Entity,hEntity> *entity,
             // Get some arbitrary point in the sketch, that will be used
             // as a reference when defining top and bottom faces.
             hEntity pt = { 0 };
+            // Not using range-for here because we're changing the size of entity in the loop.
             for(i = 0; i < entity->n; i++) {
                 Entity *e = &(entity->elem[i]);
                 if(e->group.v != opA.v) continue;
@@ -455,6 +456,7 @@ void Group::Generate(IdList<Entity,hEntity> *entity,
             // Remapped entity index.
             int ai = 1;
 
+            // Not using range-for here because we're changing the size of entity in the loop.
             for(i = 0; i < entity->n; i++) {
                 Entity *e = &(entity->elem[i]);
                 if(e->group.v != opA.v) continue;
@@ -500,6 +502,7 @@ void Group::Generate(IdList<Entity,hEntity> *entity,
             }
 
             for(a = a0; a < n; a++) {
+                // Not using range-for here because we're changing the size of entity in the loop.
                 for(i = 0; i < entity->n; i++) {
                     Entity *e = &(entity->elem[i]);
                     if(e->group.v != opA.v) continue;
@@ -535,6 +538,7 @@ void Group::Generate(IdList<Entity,hEntity> *entity,
             }
 
             for(a = a0; a < n; a++) {
+                // Not using range-for here because we're changing the size of entity in the loop.
                 for(i = 0; i < entity->n; i++) {
                     Entity *e = &(entity->elem[i]);
                     if(e->group.v != opA.v) continue;
@@ -561,6 +565,7 @@ void Group::Generate(IdList<Entity,hEntity> *entity,
             AddParam(param, h.param(5), 0);
             AddParam(param, h.param(6), 0);
 
+            // Not using range-for here because we're changing the size of entity in the loop.
             for(i = 0; i < impEntity.n; i++) {
                 Entity *ie = &(impEntity.elem[i]);
                 CopyEntity(entity, ie, 0, 0,
@@ -649,6 +654,7 @@ hEntity Group::Remap(hEntity in, int copyNumber) {
         }
     }
     // but if we don't find it in the hash table, then linear search
+    // Not using range-for here because we're storing indices
     for(i = 0; i < remap.n; i++) {
         EntityMap *em = &(remap.elem[i]);
         if(em->input.v == in.v && em->copyNumber == copyNumber) {

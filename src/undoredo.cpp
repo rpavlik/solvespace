@@ -48,6 +48,7 @@ void SolveSpaceUI::PushFromCurrentOnto(UndoStack *uk) {
     UndoState *ut = &(uk->d[uk->write]);
     *ut = {};
     ut->group.ReserveMore(SK.group.n);
+    // Not using range-for in most of the below because it's unclear if sizes are changed.
     for(i = 0; i < SK.group.n; i++) {
         Group *src = &(SK.group.elem[i]);
         Group dest = *src;

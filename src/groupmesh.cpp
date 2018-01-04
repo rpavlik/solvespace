@@ -234,6 +234,7 @@ void Group::GenerateShellAndMesh() {
             // that face, so that the user can select them with the mouse.
             Vector onOrig = sbls->point;
             int i;
+            // Not using range-for here because we're starting at a different place and using indices for meaning.
             for(i = is; i < thisShell.surface.n; i++) {
                 SSurface *ss = &(thisShell.surface.elem[i]);
                 hEntity face = Entity::NO_ENTITY;

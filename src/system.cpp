@@ -496,6 +496,7 @@ SolveResult System::Solve(Group *g, int *dof, List<hConstraint> *bad,
 
 didnt_converge:
     SK.constraint.ClearTags();
+    // Not using range-for here because index is used in additional ways
     for(i = 0; i < eq.n; i++) {
         if(ffabs(mat.B.num[i]) > CONVERGE_TOLERANCE || isnan(mat.B.num[i])) {
             // This constraint is unsatisfied.
