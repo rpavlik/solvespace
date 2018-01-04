@@ -50,12 +50,7 @@ bool Group::IsVisible() {
 }
 
 int Group::GetNumConstraints(void) {
-    int num = 0;
-    for(int i = 0; i < SK.constraint.n; i++) {
-        Constraint *c = &SK.constraint.elem[i];
-        if(c->group.v != h.v) continue;
-        num++;
-    }
+    int num = SK.constraint.CountIf([&](Constraint const & c) { return c.group.v == h.v; });
     return num;
 }
 
