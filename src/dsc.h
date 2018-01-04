@@ -398,6 +398,7 @@ public:
         auto it = std::lower_bound(begin(), end(), h, Compare());
         return it;
     }
+#if 0
     std::size_t lower_bound_index(T const& t) {
         if (IsEmpty()) {
             return 0;
@@ -405,7 +406,7 @@ public:
         auto it = lower_bound(t);
         return std::distance(begin(), it);
     }
-
+#endif
     void ReserveMore(int howMuch) {
         if(size() + howMuch > static_cast<int>(elem.capacity())) {
             elem.reserve(size() + howMuch);
@@ -427,7 +428,7 @@ public:
         ssassert(t != NULL, "Cannot find handle");
         return t;
     }
-
+#if 0
     int IndexOf(H h) {
         if (IsEmpty()) {
             return -1;
@@ -438,7 +439,7 @@ public:
         }
         return -1;
     }
-
+#endif
     T *FindByIdNoOops(H h) {
         if (IsEmpty()) {
             return nullptr;
