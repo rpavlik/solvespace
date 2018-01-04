@@ -249,7 +249,6 @@ class hEntity;
 class Param;
 class hParam;
 typedef IdList<Entity,hEntity> EntityList;
-typedef IdListAdditions<Entity, hEntity> EntityListAdditions;
 typedef IdList<Param,hParam> ParamList;
 
 enum class SolveResult : uint32_t {

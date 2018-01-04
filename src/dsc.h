@@ -296,28 +296,6 @@ struct CompareId {
     }
 };
 
-template <class T, class H>
-class IdList;
-
-template <class T, class H>
-class IdListAdditions {
-public:
-    using CompareId = CompareId<T, H>;
-    using container = std::vector<T>;
-
-    void Add(T const * t) {
-        additions.emplace_back();
-        additions.back() = *t;
-    }
-    void Add(T && t) {
-        additions.emplace_back();
-        additions.back() = std::move(t);
-    }
-    void MoveIntoList(IdList<T, H>* list);
-private:
-    container additions;
-};
-
 namespace detail {
     struct ConstructThenMove {
         template<typename T>
@@ -554,34 +532,6 @@ public:
 
 };
 
-template <class T, class H>
-inline void IdListAdditions<T, H>::MoveIntoList(IdList<T, H>* list) {
-    ssassert(list != nullptr, "Can't move into null list");
-    if (additions.empty()) {
-        // early out if there's nothing to add.
-        return;
-    }
-    using MovePolicy = detail::ConstructThenMove;
-
-    const auto oldN = list->n;
-    const int additionalN = static_cast<int>(additions.size());
-    auto newSize = additionalN + oldN;
-
-    if (newSize >= list->elemsAllocated) {
-        list->ReserveMore(additionalN);
-    }
-    std::sort(additions.begin(), additions.end(), CompareId());
-    auto mid = list->end();
-    auto outputIter = mid;
-    MovePolicy movePolicy;
-    for (auto && elt : additions) {
-        movePolicy(outputIter, std::move(elt));
-        ++outputIter;
-    }
-    std::inplace_merge(list->begin(), mid, outputIter, CompareId());
-    list->n = newSize;
-    additions.clear();
-}
 
 class BandedMatrix {
 public:
