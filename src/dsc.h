@@ -375,7 +375,7 @@ public:
         return elem.empty();
     }
 
-    using CompareId = CompareId<T, H>;
+    using Compare = CompareId<T, H>;
     uint32_t MaximumId() {
         if(IsEmpty()) {
             return 0;
@@ -395,7 +395,7 @@ public:
         if (IsEmpty()) {
             return nullptr;
         }
-        auto it = std::lower_bound(begin(), end(), h, CompareId());
+        auto it = std::lower_bound(begin(), end(), h, Compare());
         return it;
     }
     std::size_t lower_bound_index(T const& t) {
@@ -413,7 +413,7 @@ public:
     }
 
     void Add(T *t) {
-        auto it = std::lower_bound(elem.begin(), elem.end(), *t, CompareId());
+        auto it = std::lower_bound(elem.begin(), elem.end(), *t, Compare());
         if (it != elem.end()) {
             H hm = it->h;
             ssassert(hm.v != t->h.v, "Handle isn't unique");
