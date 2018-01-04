@@ -148,7 +148,7 @@ void SolveSpaceUI::GenerateAll(Generate type, bool andFindFree, bool genForBBox)
     for (auto & g: SK.group) {
         SK.groupOrder.Add(&g.h);
     }
-    std::sort(&SK.groupOrder.elem[0], &SK.groupOrder.elem[SK.groupOrder.n],
+    std::sort(SK.groupOrder.begin(), SK.groupOrder.end(),
         [](const hGroup &ha, const hGroup &hb) {
             return SK.GetGroup(ha)->order < SK.GetGroup(hb)->order;
         });
