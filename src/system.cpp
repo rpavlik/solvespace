@@ -85,6 +85,7 @@ bool System::IsDragged(hParam p) {
 }
 
 void System::SolveBySubstitution() {
+    using std::swap;
     for(auto & teq : eq) {
         Expr *tex = teq.e;
 
@@ -103,9 +104,7 @@ void System::SolveBySubstitution() {
 
             if(IsDragged(a)) {
                 // A is being dragged, so A should stay, and B should go
-                hParam t = a;
-                a = b;
-                b = t;
+                swap(a, b);
             }
 
             for(auto & req : eq) {
