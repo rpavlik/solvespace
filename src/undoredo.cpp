@@ -157,11 +157,8 @@ void SolveSpaceUI::UndoClearStack(UndoStack *uk) {
 }
 
 void SolveSpaceUI::UndoClearState(UndoState *ut) {
-    int i;
-    for(i = 0; i < ut->group.n; i++) {
-        Group *g = &(ut->group.elem[i]);
-
-        g->remap.Clear();
+    for(auto & g : ut->group) {
+        g.remap.Clear();
     }
     ut->group.Clear();
     ut->request.Clear();

@@ -14,13 +14,12 @@ void Group::AssembleLoops(bool *allClosed,
     SBezierList sbl = {};
 
     int i;
-    for(i = 0; i < SK.entity.n; i++) {
-        Entity *e = &(SK.entity.elem[i]);
-        if(e->group.v != h.v) continue;
-        if(e->construction) continue;
-        if(e->forceHidden) continue;
+    for(auto & e : SK.entity) {
+        if(e.group.v != h.v) continue;
+        if(e.construction) continue;
+        if(e.forceHidden) continue;
 
-        e->GenerateBezierCurves(&sbl);
+        e.GenerateBezierCurves(&sbl);
     }
 
     SBezier *sb;
