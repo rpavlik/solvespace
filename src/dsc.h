@@ -361,14 +361,11 @@ template <class T, class H>
 class IdList {
 private:
     int nInternal;
-    void UpdateSize() {
-        nInternal = size();
-    }
 public:
     std::reference_wrapper<const int> n = std::cref(nInternal);
     std::vector<T> elem;
-    int size() const {
-        return static_cast<int>(elem.size());
+    void UpdateSize() {
+        nInternal = static_cast<int>(elem.size());
     }
 
     bool IsEmpty() const {
@@ -408,8 +405,8 @@ public:
     }
 #endif
     void ReserveMore(int howMuch) {
-        if(size() + howMuch > static_cast<int>(elem.capacity())) {
-            elem.reserve(size() + howMuch);
+        if(n + howMuch > static_cast<int>(elem.capacity())) {
+            elem.reserve(n + howMuch);
         }
     }
 
@@ -459,7 +456,7 @@ public:
     }
     T *NextAfter(T *prev) {
         if(!prev) return NULL;
-        if(prev - begin() == (size() - 1)) return NULL;
+        if(prev - begin() == (n - 1)) return NULL;
         return prev + 1;
     }
 
@@ -472,6 +469,7 @@ public:
     int CountIf(F && predicate) const {
         return static_cast<int>(std::count_if(begin(), end(), std::forward<F&&>(predicate)));
     }
+
     void ClearTags() {
         for(auto & elt : elem) {
             elt.tag = 0;
@@ -533,8 +531,7 @@ public:
 
     void DeepCopyInto(IdList<T,H> *l) {
         l->Clear();
-        l->elem.resize(size());
-        const int n = size();
+        l->elem.resize(n);
         for (int i = 0; i < n; ++i) {
             l->elem[i] = elem[i];
         }
