@@ -325,7 +325,7 @@ namespace detail {
     };
     struct CannotCopy {
         template<typename T>
-        void operator()(T * storage, T const& src) const {
+        void operator()(...) const {
             static_assert(false, "Type cannot be copied by assignment or construction");
         }
     };
@@ -336,7 +336,23 @@ namespace detail {
         typename std::conditional<std::is_move_assignable<T>::value, ConstructThenMove, // Move assign if we can but can't move-construct
         CopyPolicy<T> // otherwise fall back to copy
         >::type>::type;
+    struct EmplaceThenAssign {
+        template<typename T>
+        void operator()(std::vector<T> & vec, typename std::vector<T>::iterator const& it, T const& val) const {
+            int i = static_cast<int>(std::distance(vec.begin(), it));
+            vec.emplace(it);
+            vec[i] = val;
+        }
 
+    };
+    struct EmplaceCopy {
+        template<typename T>
+        void operator()(std::vector<T> & vec, typename std::vector<T>::iterator const& it, T const& val) const {
+            vec.emplace(it, val);
+        }
+    };
+    template<typename T>
+    using AddEmplacePolicy = typename std::conditional<std::is_copy_constructible<T>::value, EmplaceCopy, typename std::conditional<std::is_copy_assignable<T>::value, EmplaceThenAssign, CannotCopy>::type>::type;
 }
 
 // A list, where each element has an integer identifier. The list is kept
@@ -344,17 +360,28 @@ namespace detail {
 // id.
 template <class T, class H>
 class IdList {
+private:
+    int nInternal;
+    void UpdateSize() {
+        nInternal = size();
+    }
 public:
-    T     *elem;
-    int   n;
-    int   elemsAllocated;
+    std::reference_wrapper<const int> n = std::cref(nInternal);
+    std::vector<T> elem;
+    int size() const {
+        return static_cast<int>(elem.size());
+    }
+
+    bool IsEmpty() const {
+        return elem.empty();
+    }
 
     using CompareId = CompareId<T, H>;
     uint32_t MaximumId() {
-        if(n == 0) {
+        if(IsEmpty()) {
             return 0;
         } else {
-            return elem[n - 1].h.v;
+            return elem.back().h.v;
         }
     }
 
@@ -366,21 +393,21 @@ public:
     }
 
     T * lower_bound(T const& t) {
-        if (n == 0) {
+        if (IsEmpty()) {
             return nullptr;
         }
         auto it = std::lower_bound(begin(), end(), t, CompareId());
         return it;
     }
     T * lower_bound(H const& h) {
-        if (n == 0) {
+        if (IsEmpty()) {
             return nullptr;
         }
         auto it = std::lower_bound(begin(), end(), h, CompareId());
         return it;
     }
     std::size_t lower_bound_index(T const& t) {
-        if (n == 0) {
+        if (IsEmpty()) {
             return 0;
         }
         auto it = lower_bound(t);
@@ -388,32 +415,19 @@ public:
     }
 
     void ReserveMore(int howMuch) {
-        if(n + howMuch > elemsAllocated) {
-            elemsAllocated = n + howMuch;
-            T *newElem = (T *)MemAlloc((size_t)elemsAllocated*sizeof(elem[0]));
-            for(int i = 0; i < n; i++) {
-                new(&newElem[i]) T(std::move(elem[i]));
-                elem[i].~T();
-            }
-            MemFree(elem);
-            elem = newElem;
+        if(size() + howMuch > static_cast<int>(elem.capacity())) {
+            elem.reserve(size() + howMuch);
         }
     }
 
     void Add(T *t) {
-        if(n >= elemsAllocated) {
-            ReserveMore((elemsAllocated + 32)*2 - n);
-        }
-        auto newIndex = lower_bound_index(*t);
-        if (newIndex < n) {
-            H hm = elem[newIndex].h;
+        auto it = std::lower_bound(elem.begin(), elem.end(), *t, CompareId());
+        if (it != elem.end()) {
+            H hm = it->h;
             ssassert(hm.v != t->h.v, "Handle isn't unique");
         }
-        int i = static_cast<int>(newIndex);
-        new(&elem[n]) T();
-        std::move_backward(elem + i, elem + n, elem + n + 1);
-        elem[i] = *t;
-        n++;
+        detail::AddEmplacePolicy<T>()(elem, it, *t);
+        UpdateSize();
     }
 
     T *FindById(H h) {
@@ -423,7 +437,7 @@ public:
     }
 
     int IndexOf(H h) {
-        if (n == 0) {
+        if (IsEmpty()) {
             return -1;
         }
         auto idx = lower_bound_index(*t);
@@ -434,7 +448,7 @@ public:
     }
 
     T *FindByIdNoOops(H h) {
-        if (n == 0) {
+        if (IsEmpty()) {
             return nullptr;
         }
         auto it = lower_bound(h);
@@ -448,27 +462,26 @@ public:
     }
 
     T *First() {
-        return (n == 0) ? NULL : &(elem[0]);
+        return (IsEmpty()) ? NULL : &(elem[0]);
     }
     T *NextAfter(T *prev) {
         if(!prev) return NULL;
-        if(prev - elem == (n - 1)) return NULL;
+        if(prev - begin() == (size() - 1)) return NULL;
         return prev + 1;
     }
 
     T *begin() { return &elem[0]; }
-    T *end() { return &elem[n]; }
+    T *end() { return &(elem.back()) + 1; }
     const T *begin() const { return &elem[0]; }
-    const T *end() const { return &elem[n]; }
+    const T *end() const { return &(elem.back()) + 1; }
 
     template<typename F>
     int CountIf(F && predicate) const {
         return static_cast<int>(std::count_if(begin(), end(), std::forward<F&&>(predicate)));
     }
     void ClearTags() {
-        int i;
-        for(i = 0; i < n; i++) {
-            elem[i].tag = 0;
+        for(auto & elt : elem) {
+            elt.tag = 0;
         }
     }
 
@@ -480,23 +493,37 @@ public:
     }
 
     void RemoveTagged() {
+        auto newEnd = std::remove_if(elem.begin(), elem.end(), [](T & t) {
+            if (t.tag) {
+                t.Clear();
+                return true;
+            }
+            return false;
+        });
+        if (newEnd != elem.end()) {
+            elem.erase(newEnd, elem.end());
+        }
+        UpdateSize();
+#if 0
         int src, dest;
         dest = 0;
+        auto n = size();
         for(src = 0; src < n; src++) {
             if(elem[src].tag) {
                 // this item should be deleted
                 elem[src].Clear();
             } else {
                 if(src != dest) {
-                    elem[dest] = elem[src];
+                    elem[dest] = std::move(elem[src]);
                 }
                 dest++;
             }
         }
-        for(int i = dest; i < n; i++)
-            elem[i].~T();
-        n = dest;
+        if (dest + 1 != size()) {
+            elem.erase(elem.begin() + dest, elem.end());
+        }
         // and elemsAllocated is untouched, because we didn't resize
+#endif
     }
     void RemoveById(H h) {
         ClearTags();
@@ -506,32 +533,27 @@ public:
 
     void MoveSelfInto(IdList<T,H> *l) {
         l->Clear();
-        *l = *this;
-        elemsAllocated = n = 0;
-        elem = NULL;
+        l->elem = std::move(elem);
+        UpdateSize();
+        l->UpdateSize();
     }
 
     void DeepCopyInto(IdList<T,H> *l) {
         l->Clear();
-        l->elem = (T *)MemAlloc(elemsAllocated * sizeof(elem[0]));
-        detail::CopyPolicy<T> constructAndCopy;
-        for (int i = 0; i < n; i++) {
-            constructAndCopy(&l->elem[i], elem[i]);
+        l->elem.resize(size());
+        const int n = size();
+        for (int i = 0; i < n; ++i) {
+            l->elem[i] = elem[i];
         }
-        l->elemsAllocated = elemsAllocated;
-        l->n = n;
+        l->UpdateSize();
     }
 
     void Clear() {
-        for(int i = 0; i < n; i++) {
-            elem[i].Clear();
-            elem[i].~T();
+        for (auto & elt : elem) {
+            elt.Clear();
         }
-        n = 0;
-        if(elem) MemFree(elem);
-
-        elemsAllocated = 0;
-        elem = NULL;
+        elem.clear();
+        UpdateSize();
     }
 
 };
