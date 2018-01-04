@@ -297,8 +297,8 @@ void SolveSpaceUI::GenerateAll(Generate type, bool andFindFree, bool genForBBox)
     }
 
     // And update any reference dimensions with their new values
-    for(i = 0; i < SK.constraint.n; i++) {
-        Constraint *c = &(SK.constraint.elem[i]);
+    for(auto & con : SK.constraint) {
+        Constraint *c = &con;
         if(c->reference) {
             c->ModifyToSatisfy();
         }
@@ -506,20 +506,19 @@ void SolveSpaceUI::SolveGroupAndReport(hGroup hg, bool andFindFree) {
 }
 
 void SolveSpaceUI::WriteEqSystemForGroup(hGroup hg) {
-    int i;
     // Clear out the system to be solved.
     sys.entity.Clear();
     sys.param.Clear();
     sys.eq.Clear();
     // And generate all the params for requests in this group
-    for(i = 0; i < SK.request.n; i++) {
-        Request *r = &(SK.request.elem[i]);
+    for(auto & req : SK.request) {
+        Request *r = &req;
         if(r->group.v != hg.v) continue;
 
         r->Generate(&(sys.entity), &(sys.param));
     }
-    for(i = 0; i < SK.constraint.n; i++) {
-        Constraint *c = &SK.constraint.elem[i];
+    for(auto & con : SK.constraint) {
+        Constraint *c = &con;
         if(c->group.v != hg.v) continue;
 
         c->Generate(&(sys.param));
@@ -528,8 +527,8 @@ void SolveSpaceUI::WriteEqSystemForGroup(hGroup hg) {
     Group *g = SK.GetGroup(hg);
     g->Generate(&(sys.entity), &(sys.param));
     // Set the initial guesses for all the params
-    for(i = 0; i < sys.param.n; i++) {
-        Param *p = &(sys.param.elem[i]);
+    for(auto & param : sys.param) {
+        Param *p = &param;
         p->known = false;
         p->val = SK.GetParam(p->h)->val;
     }
