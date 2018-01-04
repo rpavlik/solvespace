@@ -461,6 +461,10 @@ public:
     const T *begin() const { return &elem[0]; }
     const T *end() const { return &elem[n]; }
 
+    template<typename F>
+    int CountIf(F && predicate) const {
+        return static_cast<int>(std::count_if(begin(), end(), std::forward<F&&>(predicate)));
+    }
     void ClearTags() {
         int i;
         for(i = 0; i < n; i++) {
