@@ -271,6 +271,7 @@ void SolveSpaceUI::GenerateAll(Generate type, bool andFindFree, bool genForBBox)
             g->solved.how = SolveResult::OKAY;
             g->clean = true;
         } else {
+            // this i is an index in groupOrder
             if(i >= first && i <= last) {
                 // The group falls inside the range, so really solve it,
                 // and then regenerate the mesh based on the solved stuff.
