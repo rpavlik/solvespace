@@ -296,7 +296,7 @@ void StepFileWriter::ExportSurfacesTo(const Platform::Path &filename) {
     Group *g = SK.GetGroup(SS.GW.activeGroup);
     SShell *shell = &(g->runningShell);
 
-    if(shell->surface.n == 0) {
+    if(shell->surface.IsEmpty()) {
         Error("The model does not contain any surfaces to export.%s",
             g->runningMesh.l.n > 0 ?
                 "\n\nThe model does contain triangles from a mesh, but "

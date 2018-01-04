@@ -731,7 +731,7 @@ void SShell::MakeFromBoolean(SShell *a, SShell *b, SSurface::CombineAs type) {
     a->MakeClassifyingBsps(this);
     b->MakeClassifyingBsps(this);
 
-    if(b->surface.n == 0 || a->surface.n == 0) {
+    if(b->surface.IsEmpty() || a->surface.IsEmpty()) {
         I = 1000000;
     } else {
         I = 0;
