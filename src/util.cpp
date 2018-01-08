@@ -418,24 +418,6 @@ Vector Vector::From(hParam x, hParam y, hParam z) {
     return v;
 }
 
-double Vector::Element(int i) const {
-    switch(i) {
-        case 0: return x;
-        case 1: return y;
-        case 2: return z;
-        default: ssassert(false, "Unexpected vector element index");
-    }
-}
-
-bool Vector::Equals(Vector v, double tol) const {
-    // Quick axis-aligned tests before going further
-    double dx = v.x - x; if(dx < -tol || dx > tol) return false;
-    double dy = v.y - y; if(dy < -tol || dy > tol) return false;
-    double dz = v.z - z; if(dz < -tol || dz > tol) return false;
-
-    return (this->Minus(v)).MagSquared() < tol*tol;
-}
-
 bool Vector::EqualsExactly(Vector v) const {
     return EXACT(x == v.x &&
                  y == v.y &&
