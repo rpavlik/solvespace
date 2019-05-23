@@ -240,7 +240,7 @@ void Group::GenerateShellAndMesh() {
             // Not using range-for here because we're starting at a different place and using
             // indices for meaning.
             for(i = is; i < thisShell.surface.n; i++) {
-                SSurface *ss = &(thisShell.surface.elem[i]);
+                SSurface *ss = &(thisShell.surface[i]);
                 hEntity face = Entity::NO_ENTITY;
 
                 Vector p = ss->PointAt(0, 0),
@@ -706,11 +706,12 @@ void Group::DrawPolyError(Canvas *canvas) {
 
 void Group::DrawFilledPaths(Canvas *canvas) {
     for(const SBezierLoopSet &sbls : bezierLoops.l) {
-        if(sbls.l.n == 0 || sbls.l.elem[0].l.n == 0) continue;
+        if(sbls.l.IsEmpty() || sbls.l[0].l.IsEmpty())
+            continue;
 
         // In an assembled loop, all the styles should be the same; so doesn't
         // matter which one we grab.
-        SBezier *sb = &(sbls.l.elem[0].l.elem[0]);
+        const SBezier *sb = &(sbls.l[0].l[0]);
         Style *s = Style::Get({ (uint32_t)sb->auxA });
 
         Canvas::Fill fill = {};
@@ -740,9 +741,10 @@ void Group::DrawContourAreaLabels(Canvas *canvas) {
     Vector gu = camera.projUp.ScaledBy(1 / camera.scale);
 
     for(SBezierLoopSet &sbls : bezierLoops.l) {
-        if(sbls.l.n == 0 || sbls.l.elem[0].l.n == 0) continue;
+        if(sbls.l.IsEmpty() || sbls.l[0].l.IsEmpty())
+            continue;
 
-        Vector min = sbls.l.elem[0].l.elem[0].ctrl[0];
+        Vector min = sbls.l[0].l[0].ctrl[0];
         Vector max = min;
         Vector zero = Vector::From(0.0, 0.0, 0.0);
         sbls.GetBoundingProjd(Vector::From(1.0, 0.0, 0.0), zero, &min.x, &max.x);
