@@ -330,7 +330,7 @@ public:
         if(IsEmpty()) {
             return 0;
         } else {
-            return elem[n - 1].h.v;
+            return Last()->h.v;
         }
     }
 
@@ -426,6 +426,9 @@ public:
 
     T *First() {
         return (IsEmpty()) ? NULL : &(elem[0]);
+    }
+    T *Last() {
+        return (IsEmpty()) ? NULL : &(elem[n-1]);
     }
     T *NextAfter(T *prev) {
         if(IsEmpty() || !prev) return NULL;
