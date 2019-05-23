@@ -574,7 +574,7 @@ void GraphicsWindow::LoopOverPoints(const std::vector<Entity *> &entities,
     Group *g = SK.GetGroup(activeGroup);
     g->GenerateDisplayItems();
     for(int i = 0; i < g->displayMesh.l.n; i++) {
-        STriangle *tr = &(g->displayMesh.l.elem[i]);
+        STriangle *tr = &(g->displayMesh.l[i]);
         if(!includeMesh) {
             bool found = false;
             for(const hEntity &face : faces) {
@@ -590,9 +590,9 @@ void GraphicsWindow::LoopOverPoints(const std::vector<Entity *> &entities,
     }
     if(!includeMesh) return;
     for(int i = 0; i < g->polyLoops.l.n; i++) {
-        SContour *sc = &(g->polyLoops.l.elem[i]);
+        SContour *sc = &(g->polyLoops.l[i]);
         for(int j = 0; j < sc->l.n; j++) {
-            HandlePointForZoomToFit(sc->l.elem[j].p, pmax, pmin, wmin, usePerspective, camera);
+            HandlePointForZoomToFit(sc->l[j].p, pmax, pmin, wmin, usePerspective, camera);
         }
     }
 }
@@ -609,7 +609,7 @@ double GraphicsWindow::ZoomToFit(const Camera &camera,
 
     if(useSelection) {
         for(int i = 0; i < selection.n; i++) {
-            Selection *s = &selection.elem[i];
+            Selection *s = &selection[i];
             if(s->entity.v != 0) {
                 Entity *e = SK.entity.FindById(s->entity);
                 if(e->IsFace()) {
@@ -850,7 +850,7 @@ void GraphicsWindow::EnsureValidActives() {
     if((!g) || (g->h.v == Group::HGROUP_REFERENCES.v)) {
         int i;
         for(i = 0; i < SK.groupOrder.n; i++) {
-            if(SK.groupOrder.elem[i].v != Group::HGROUP_REFERENCES.v) {
+            if(SK.groupOrder[i].v != Group::HGROUP_REFERENCES.v) {
                 break;
             }
         }
@@ -866,7 +866,7 @@ void GraphicsWindow::EnsureValidActives() {
             // do it now so that drawing mode isn't switched to "Free in 3d".
             SS.GenerateAll(SolveSpaceUI::Generate::ALL);
         } else {
-            activeGroup = SK.groupOrder.elem[i];
+            activeGroup = SK.groupOrder[i];
         }
         SK.GetGroup(activeGroup)->Activate();
         change = true;

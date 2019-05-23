@@ -152,7 +152,7 @@ void SolveSpaceUI::GenerateAll(Generate type, bool andFindFree, bool genForBBox)
             // Start from the first dirty group, and solve until the active group,
             // since all groups after the active group are hidden.
             for(i = 0; i < SK.groupOrder.n; i++) {
-                Group *g = SK.GetGroup(SK.groupOrder.elem[i]);
+                Group *g = SK.GetGroup(SK.groupOrder[i]);
                 if((!g->clean) || !g->IsSolvedOkay()) {
                     first = min(first, i);
                 }
@@ -182,7 +182,7 @@ void SolveSpaceUI::GenerateAll(Generate type, bool andFindFree, bool genForBBox)
 
         case Generate::UNTIL_ACTIVE: {
             for(i = 0; i < SK.groupOrder.n; i++) {
-                if(SK.groupOrder.elem[i].v == SS.GW.activeGroup.v)
+                if(SK.groupOrder[i].v == SS.GW.activeGroup.v)
                     break;
             }
 
@@ -217,7 +217,7 @@ void SolveSpaceUI::GenerateAll(Generate type, bool andFindFree, bool genForBBox)
     SK.entity.ReserveMore(oldEntityCount);
 
     for(i = 0; i < SK.groupOrder.n; i++) {
-        Group *g = SK.GetGroup(SK.groupOrder.elem[i]);
+        Group *g = SK.GetGroup(SK.groupOrder[i]);
 
         // The group may depend on entities or other groups, to define its
         // workplane geometry or for its operands. Those must already exist
@@ -426,7 +426,7 @@ void SolveSpaceUI::MarkDraggedParams() {
         if(i == -1) {
             hp = SS.GW.pending.point;
         } else {
-            hp = SS.GW.pending.points.elem[i];
+            hp = SS.GW.pending.points[i];
         }
         if(!hp.v) continue;
 
@@ -554,7 +554,7 @@ SolveResult SolveSpaceUI::TestRankForGroup(hGroup hg, int *rank) {
 
 bool SolveSpaceUI::ActiveGroupsOkay() {
     for(int i = 0; i < SK.groupOrder.n; i++) {
-        Group *g = SK.GetGroup(SK.groupOrder.elem[i]);
+        Group *g = SK.GetGroup(SK.groupOrder[i]);
         if(!g->IsSolvedOkay())
             return false;
         if(g->h.v == SS.GW.activeGroup.v)

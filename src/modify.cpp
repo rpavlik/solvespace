@@ -96,7 +96,7 @@ void GraphicsWindow::FixConstraintsForPointBeingDeleted(hEntity hpt) {
     // that relationship. So put it back here now.
     int i;
     for(i = 1; i < ld.n; i++) {
-        Constraint::ConstrainCoincident(ld.elem[i-1], ld.elem[i]);
+        Constraint::ConstrainCoincident(ld[i-1], ld[i]);
     }
     ld.Clear();
 }
@@ -407,7 +407,7 @@ void GraphicsWindow::MakeTangentArc() {
         // Delete the coincident constraint for the removed point.
         SK.constraint.ClearTags();
         for(i = 0; i < SK.constraint.n; i++) {
-            Constraint *cs = &(SK.constraint.elem[i]);
+            Constraint *cs = &(SK.constraint[i]);
             if(cs->group.v != activeGroup.v) continue;
             if(cs->workplane.v != ActiveWorkplane().v) continue;
             if(cs->type != Constraint::Type::POINTS_COINCIDENT) continue;
@@ -532,7 +532,7 @@ hEntity GraphicsWindow::SplitCubic(hEntity he, Vector pinter) {
     double t;
     int i, j;
     for(i = 0; i < sbl.l.n; i++) {
-        SBezier *sb = &(sbl.l.elem[i]);
+        SBezier *sb = &(sbl.l[i]);
         ssassert(sb->deg == 3, "Expected a cubic bezier");
 
         sb->ClosestPointTo(pinter, &t, /*mustConverge=*/false);
