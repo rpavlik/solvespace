@@ -187,7 +187,7 @@ public:
     void ReserveMore(int howMuch) {
         if(n + howMuch > elemsAllocated) {
             elemsAllocated = n + howMuch;
-            T *newElem = (T *)MemAlloc((size_t)elemsAllocated*sizeof(elem[0]));
+            T *newElem = (T *)MemAlloc((size_t)elemsAllocated*sizeof(T));
             for(int i = 0; i < n; i++) {
                 new(&newElem[i]) T(std::move(elem[i]));
                 elem[i].~T();
@@ -320,6 +320,12 @@ public:
         return n == 0;
     }
 
+    void AllocForOneMore() {
+        if(n >= elemsAllocated) {
+            ReserveMore((elemsAllocated + 32)*2 - n);
+        }
+    }
+
     uint32_t MaximumId() {
         if(IsEmpty()) {
             return 0;
@@ -363,7 +369,7 @@ public:
     void ReserveMore(int howMuch) {
         if(n + howMuch > elemsAllocated) {
             elemsAllocated = n + howMuch;
-            T *newElem = (T *)MemAlloc((size_t)elemsAllocated*sizeof(elem[0]));
+            T *newElem = (T *)MemAlloc((size_t)elemsAllocated*sizeof(T));
             for(int i = 0; i < n; i++) {
                 new(&newElem[i]) T(std::move(elem[i]));
                 elem[i].~T();
@@ -374,9 +380,8 @@ public:
     }
 
     void Add(T *t) {
-        if(n >= elemsAllocated) {
-            ReserveMore((elemsAllocated + 32)*2 - n);
-        }
+        AllocForOneMore();
+
         // Look to see if we already have something with the same handle value.
         ssassert(FindByIdNoOops(t->h) == nullptr, "Handle isn't unique");
 
