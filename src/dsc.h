@@ -317,14 +317,20 @@ static inline bool operator!=(HandleBase<Derived> const &lhs, HandleBase<Derived
     return !(lhs == rhs);
 }
 
+// Less-than-compare any two instances of a handle type.
+template<typename Derived>
+static inline bool operator<(HandleBase<Derived> const &lhs, HandleBase<Derived> const &rhs) {
+    return lhs.v < rhs.v;
+}
+
 // Comparison functor used by IdList and related classes
 template <class T, class H>
 struct CompareId {
     bool operator()(T const& lhs, T const& rhs) const {
-        return lhs.h.v < rhs.h.v;
+        return lhs.h < rhs.h;
     }
     bool operator()(T const& lhs, H rhs) const {
-        return lhs.h.v < rhs.v;
+        return lhs.h < rhs;
     }
 };
 
