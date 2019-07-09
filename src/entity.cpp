@@ -37,7 +37,7 @@ ExprVector EntityBase::VectorGetExprsInWorkplane(hEntity wrkpl) const {
         case Type::NORMAL_N_ROT:
         case Type::NORMAL_N_ROT_AA: {
             ExprVector ev = NormalExprsN();
-            if(wrkpl.v == EntityBase::FREE_IN_3D.v) {
+            if(wrkpl == EntityBase::FREE_IN_3D) {
                 return ev;
             }
             // Get the offset and basis vectors for this weird exotic csys.
@@ -565,7 +565,7 @@ ExprVector EntityBase::PointGetExprs() const {
 }
 
 void EntityBase::PointGetExprsInWorkplane(hEntity wrkpl, Expr **u, Expr **v) const {
-    if(type == Type::POINT_IN_2D && workplane.v == wrkpl.v) {
+    if(type == Type::POINT_IN_2D && workplane == wrkpl) {
         // They want our coordinates in the form that we've written them,
         // very nice.
         *u = Expr::From(param[0]);
@@ -587,7 +587,7 @@ void EntityBase::PointGetExprsInWorkplane(hEntity wrkpl, Expr **u, Expr **v) con
 }
 
 ExprVector EntityBase::PointGetExprsInWorkplane(hEntity wrkpl) const {
-    if(wrkpl.v == Entity::FREE_IN_3D.v) {
+    if(wrkpl == Entity::FREE_IN_3D) {
         return PointGetExprs();
     }
 
@@ -872,10 +872,10 @@ void EntityBase::GenerateEquations(IdList<Equation,hEquation> *l) const {
             // would be redundant and therefore overconstrain things.
             auto it = std::find_if(
                 SK.constraint.begin(), SK.constraint.end(), [&](ConstraintBase const &con) {
-                    return (con.group.v == group.v) &&
+                    return (con.group == group) &&
                            (con.type == Constraint::Type::POINTS_COINCIDENT) &&
-                           ((con.ptA.v == point[1].v && con.ptB.v == point[2].v) ||
-                            (con.ptA.v == point[2].v && con.ptB.v == point[1].v));
+                           ((con.ptA == point[1] && con.ptB == point[2]) ||
+                            (con.ptA == point[2] && con.ptB == point[1]));
                 });
             if(it != SK.constraint.end()) {
                 break;

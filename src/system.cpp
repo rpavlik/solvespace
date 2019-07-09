@@ -77,7 +77,7 @@ void System::EvalJacobian() {
 bool System::IsDragged(hParam p) {
     hParam *pp;
     for(pp = dragged.First(); pp; pp = dragged.NextAfter(pp)) {
-        if(p.v == pp->v) return true;
+        if(p == *pp) return true;
     }
     return false;
 }
@@ -108,7 +108,7 @@ void System::SolveBySubstitution() {
                 req.e->Substitute(a, b); // A becomes B, B unchanged
             }
             for(auto & rp : param) {
-                if(rp.substd.v == a.v) {
+                if(rp.substd == a) {
                     rp.substd = b;
                 }
             }
@@ -320,8 +320,8 @@ void System::WriteEquationsExceptFor(hConstraint hc, Group *g) {
     // Generate all the equations from constraints in this group
     for(auto & con : SK.constraint) {
         ConstraintBase *c = &con;
-        if(c->group.v != g->h.v) continue;
-        if(c->h.v == hc.v) continue;
+        if(c->group != g->h) continue;
+        if(c->h == hc) continue;
 
         if(c->HasLabel() && c->type != Constraint::Type::COMMENT &&
                 g->allDimsReference)
@@ -343,7 +343,7 @@ void System::WriteEquationsExceptFor(hConstraint hc, Group *g) {
     // And the equations from entities
     for(auto & ent : SK.entity) {
         EntityBase *e = &ent;
-        if(e->group.v != g->h.v) continue;
+        if(e->group != g->h) continue;
 
         e->GenerateEquations(&eq);
     }
@@ -357,7 +357,7 @@ void System::FindWhichToRemoveToFixJacobian(Group *g, List<hConstraint> *bad, bo
     for(a = 0; a < 2; a++) {
         for(auto & con : SK.constraint) {
             ConstraintBase *c = &con;
-            if(c->group.v != g->h.v) continue;
+            if(c->group != g->h) continue;
             if((c->type == Constraint::Type::POINTS_COINCIDENT && a == 0) ||
                (c->type != Constraint::Type::POINTS_COINCIDENT && a == 1))
             {
@@ -427,8 +427,8 @@ SolveResult System::Solve(Group *g, int *rank, int *dof, List<hConstraint> *bad,
         if(e.tag != 0) continue;
 
         hParam hp = e.e->ReferencedParams(&param);
-        if(hp.v == Expr::NO_PARAMS.v) continue;
-        if(hp.v == Expr::MULTIPLE_PARAMS.v) continue;
+        if(hp == Expr::NO_PARAMS) continue;
+        if(hp == Expr::MULTIPLE_PARAMS) continue;
 
         Param *p = param.FindById(hp);
         if(p->tag != 0) continue; // let rank test catch inconsistency

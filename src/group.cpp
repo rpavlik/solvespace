@@ -50,7 +50,7 @@ bool Group::IsVisible() {
 }
 
 size_t Group::GetNumConstraints(void) {
-    return SK.constraint.CountIf([&](Constraint const & c) { return c.group.v == h.v; });
+    return SK.constraint.CountIf([&](Constraint const & c) { return c.group == h; });
 }
 
 Vector Group::ExtrusionGetVector() {
@@ -288,7 +288,7 @@ void Group::MenuGroup(Command id, Platform::Path linkFile) {
         Group *gi = SK.GetGroup(hg);
         if(afterActive)
             gi->order += 1;
-        if(gi->h.v == SS.GW.activeGroup.v) {
+        if(gi->h == SS.GW.activeGroup) {
             g.order = gi->order + 1;
             afterActive = true;
         }
@@ -451,7 +451,7 @@ void Group::Generate(IdList<Entity,hEntity> *entity,
             // Not using range-for here because we're changing the size of entity in the loop.
             for(i = 0; i < entity->n; i++) {
                 Entity *e = &(entity->Get(i));
-                if(e->group.v != opA.v) continue;
+                if(e->group != opA) continue;
 
                 if(e->IsPoint()) pt = e->h;
 
@@ -485,7 +485,7 @@ void Group::Generate(IdList<Entity,hEntity> *entity,
             // Not using range-for here because we're changing the size of entity in the loop.
             for(i = 0; i < entity->n; i++) {
                 Entity *e = &(entity->Get(i));
-                if(e->group.v != opA.v) continue;
+                if(e->group != opA) continue;
 
                 e->CalculateNumerical(/*forExport=*/false);
                 hEntity he = e->h;
@@ -534,7 +534,7 @@ void Group::Generate(IdList<Entity,hEntity> *entity,
 
             for(i = 0; i < entity->n; i++) {
                 Entity *e = &((*entity)[i]);
-                if(e->group.v != opA.v)
+                if(e->group != opA)
                     continue;
 
                 e->CalculateNumerical(/*forExport=*/false);
@@ -544,7 +544,7 @@ void Group::Generate(IdList<Entity,hEntity> *entity,
                            NO_PARAM, NO_PARAM, NO_PARAM, NO_PARAM, NO_PARAM, CopyAs::NUMERIC);
 
                 for(a = 0; a < 2; a++) {
-                    if(e->group.v != opA.v)
+                    if(e->group != opA)
                         continue;
 
                     e->CalculateNumerical(false);
@@ -581,7 +581,7 @@ void Group::Generate(IdList<Entity,hEntity> *entity,
                 // Not using range-for here because we're changing the size of entity in the loop.
                 for(i = 0; i < entity->n; i++) {
                     Entity *e = &(entity->Get(i));
-                    if(e->group.v != opA.v) continue;
+                    if(e->group != opA) continue;
 
                     e->CalculateNumerical(/*forExport=*/false);
                     CopyEntity(entity, e,
@@ -617,7 +617,7 @@ void Group::Generate(IdList<Entity,hEntity> *entity,
                 // Not using range-for here because we're changing the size of entity in the loop.
                 for(i = 0; i < entity->n; i++) {
                     Entity *e = &(entity->Get(i));
-                    if(e->group.v != opA.v) continue;
+                    if(e->group != opA) continue;
 
                     e->CalculateNumerical(/*forExport=*/false);
                     CopyEntity(entity, e,
@@ -692,7 +692,7 @@ void Group::GenerateEquations(IdList<Equation,hEquation> *l) {
 #undef EC
 #undef EP
     } else if(type == Type::EXTRUDE) {
-        if(predef.entityB.v != Entity::FREE_IN_3D.v) {
+        if(predef.entityB != Entity::FREE_IN_3D) {
             // The extrusion path is locked along a line, normal to the
             // specified workplane.
             Entity *w = SK.GetEntity(predef.entityB);
@@ -707,7 +707,7 @@ void Group::GenerateEquations(IdList<Equation,hEquation> *l) {
             AddEq(l, v.Dot(extruden), 1);
         }
     } else if(type == Type::TRANSLATE) {
-        if(predef.entityB.v != Entity::FREE_IN_3D.v) {
+        if(predef.entityB != Entity::FREE_IN_3D) {
             Entity *w = SK.GetEntity(predef.entityB);
             ExprVector n = w->Normal()->NormalExprsN();
             ExprVector trans;
@@ -845,7 +845,7 @@ void Group::MakeLatheSurfacesSelectable(IdList<Entity, hEntity> *el, hEntity in,
 
 void Group::MakeExtrusionTopBottomFaces(IdList<Entity,hEntity> *el, hEntity pt)
 {
-    if(pt.v == 0) return;
+    if(!pt) return;
     Group *src = SK.GetGroup(opA);
     Vector n = src->polyLoops.normal;
 

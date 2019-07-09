@@ -72,7 +72,7 @@ void TextWindow::ScreenActivateGroup(int link, uint32_t v) {
 void TextWindow::ReportHowGroupSolved(hGroup hg) {
     SS.GW.ClearSuper();
     SS.TW.GoToScreen(Screen::GROUP_SOLVE_INFO);
-    SS.TW.shown.group.v = hg.v;
+    SS.TW.shown.group = hg;
     SS.ScheduleShowTW();
 }
 void TextWindow::ScreenHowGroupSolved(int link, uint32_t v) {
@@ -105,7 +105,7 @@ void TextWindow::ShowListOfGroups() {
         Group *g = SK.GetGroup(hg);
 
         std::string s = g->DescriptionString();
-        bool active = (g->h.v == SS.GW.activeGroup.v);
+        bool active = (g->h == SS.GW.activeGroup);
         bool shown = g->visible;
         bool ok = g->IsSolvedOkay();
         bool warn = (g->type == Group::Type::DRAWING_WORKPLANE &&
@@ -122,7 +122,7 @@ void TextWindow::ShowListOfGroups() {
               sprintf(sdof, "%-3d", dof);
             }
         }
-        bool ref = (g->h.v == Group::HGROUP_REFERENCES.v);
+        bool ref = (g->h == Group::HGROUP_REFERENCES);
         Printf(false, "%Bp%Fd "
                "%Ft%s%Fb%D%f%Ll%s%E "
                "%Fb%s%D%f%Ll%s%E  "
@@ -248,7 +248,7 @@ void TextWindow::ScreenOpacity(int link, uint32_t v) {
 
     SS.TW.ShowEditControl(11, ssprintf("%.2f", g->color.alphaF()));
     SS.TW.edit.meaning = Edit::GROUP_OPACITY;
-    SS.TW.edit.group.v = g->h.v;
+    SS.TW.edit.group = g->h;
 }
 void TextWindow::ScreenChangeExprA(int link, uint32_t v) {
     Group *g = SK.GetGroup(SS.TW.shown.group);
@@ -274,7 +274,7 @@ void TextWindow::ScreenDeleteGroup(int link, uint32_t v) {
     SS.UndoRemember();
 
     hGroup hg = SS.TW.shown.group;
-    if(hg.v == SS.GW.activeGroup.v) {
+    if(hg == SS.GW.activeGroup) {
         SS.GW.activeGroup = SK.GetGroup(SS.GW.activeGroup)->PreviousGroup()->h;
     }
 
@@ -294,7 +294,7 @@ void TextWindow::ShowGroupInfo() {
     Group *g = SK.GetGroup(shown.group);
     const char *s = "???";
 
-    if(shown.group.v == Group::HGROUP_REFERENCES.v) {
+    if(shown.group == Group::HGROUP_REFERENCES) {
         Printf(true, "%FtGROUP  %E%s", g->DescriptionString().c_str());
         goto list_items;
     } else {
@@ -446,7 +446,7 @@ list_items:
     int a = 0;
     for(auto & r : SK.request) {
 
-        if(r.group.v == shown.group.v) {
+        if(r.group == shown.group) {
             std::string s = r.DescriptionString();
             Printf(false, "%Bp   %Fl%Ll%D%f%h%s%E",
                 (a & 1) ? 'd' : 'a',
@@ -462,7 +462,7 @@ list_items:
     Printf(false, "%Ft constraints in group (%d DOF)", g->solved.dof);
     for(auto & c : SK.constraint) {
 
-        if(c.group.v == shown.group.v) {
+        if(c.group == shown.group) {
             std::string s = c.DescriptionString();
             Printf(false, "%Bp   %Fl%Ll%D%f%h%s%E %s",
                 (a & 1) ? 'd' : 'a',
