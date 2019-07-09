@@ -293,6 +293,30 @@ public:
     }
 };
 
+/// CRTP base for handle classes, to automatically provide functionality.
+/// Derived classes should include "using HandleBase::HandleBase" in their body to inherit constructors.
+template<typename Derived>
+class HandleBase {
+public:
+    HandleBase(uint32_t val) : v(val) {}
+    HandleBase() : v(0) {}
+    // In a boolean context, a handle is "true" if it is non-zero.
+    explicit operator bool() const { return v != 0; }
+    uint32_t v;
+};
+
+// Equality-compare any two instances of a handle type.
+template<typename Derived>
+static inline bool operator==(HandleBase<Derived> const &lhs, HandleBase<Derived> const &rhs) {
+    return lhs.v == rhs.v;
+}
+
+// Inequality-compare any two instances of a handle type.
+template<typename Derived>
+static inline bool operator!=(HandleBase<Derived> const &lhs, HandleBase<Derived> const &rhs) {
+    return !(lhs == rhs);
+}
+
 // Comparison functor used by IdList and related classes
 template <class T, class H>
 struct CompareId {
@@ -418,7 +442,7 @@ public:
         if (it == nullptr || it == end()) {
             return nullptr;
         }
-        if (it->h.v == h.v) {
+        if (it->h == h) {
             return it;
         }
         return nullptr;
