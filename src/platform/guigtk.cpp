@@ -1459,13 +1459,9 @@ void InitGui(int argc, char **argv) {
     }
 }
 
-void RunGui() {
-    gtkMain->run();
-}
+void RunGui() { Gtk::Main::run(); }
 
-void ExitGui() {
-    gtkMain->quit();
-}
+void ExitGui() { Gtk::Main::quit(); }
 
 void ClearGui() {
     delete gtkMain;
