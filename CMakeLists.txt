@@ -20,6 +20,11 @@ set(CMAKE_USER_MAKE_RULES_OVERRIDE
 set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX
    "${CMAKE_SOURCE_DIR}/cmake/cxx_flag_overrides.cmake")
 
+set(SANITIZER_LINKER_FLAGS -fsanitize=address)
+if(SANITIZER_LINKER_FLAGS)
+    set(SANITIZER_COMPILER_FLAGS ${SANITIZER_LINKER_FLAGS} -01 -fno-omit-frame-pointer -fno-optimize-sibling-calls)
+endif()
+
 # project
 
 # NOTE TO PACKAGERS: The embedded git commit hash is critical for rapid bug triage when the builds
