@@ -747,11 +747,7 @@ void SPolygon::FixContourDirections() {
     }
 }
 
-bool SPolygon::IsEmpty() const {
-    if(l.IsEmpty() || l[0].l.IsEmpty())
-        return true;
-    return false;
-}
+bool SPolygon::IsEmpty() const { return (l.IsEmpty() || l[0].l.IsEmpty()); }
 
 Vector SPolygon::AnyPoint() const {
     ssassert(!IsEmpty(), "Need at least one point");

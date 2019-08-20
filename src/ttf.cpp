@@ -94,17 +94,16 @@ TtfFont *TtfFontList::LoadFont(const std::string &font)
     TtfFont *tf = std::find_if(l.begin(), l.end(),
         [&font](const TtfFont &tf) { return tf.FontFileBaseName() == font; });
 
-    if(tf != l.end()) {
-        if(tf->fontFace == NULL) {
-            if(tf->IsResource())
-                tf->LoadFromResource(fontLibrary, /*nameOnly=*/false);
-            else
-                tf->LoadFromFile(fontLibrary, /*nameOnly=*/false);
-        }
-        return tf;
-    } else {
+    if(tf == l.end()) {
         return NULL;
     }
+    if(tf->fontFace == NULL) {
+        if(tf->IsResource())
+            tf->LoadFromResource(fontLibrary, /*nameOnly=*/false);
+        else
+            tf->LoadFromFile(fontLibrary, /*nameOnly=*/false);
+    }
+    return tf;
 }
 
 void TtfFontList::PlotString(const std::string &font, const std::string &str,

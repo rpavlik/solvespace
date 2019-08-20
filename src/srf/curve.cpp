@@ -163,11 +163,7 @@ bool SBezier::IsCircle(Vector axis, Vector *center, double *r) const {
         dtheta = 2*PI - dtheta;
     }
 
-    if(fabs(weight[1] - cos(dtheta/2)) > LENGTH_EPS) {
-        return false;
-    }
-
-    return true;
+    return (fabs(weight[1] - cos(dtheta / 2)) <= LENGTH_EPS);
 }
 
 bool SBezier::IsRational() const {

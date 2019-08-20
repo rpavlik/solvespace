@@ -208,7 +208,7 @@ default: dbp("bad constraint type %d", sc->type); return;
     List<hConstraint> bad = {};
 
     // Now we're finally ready to solve!
-    bool andFindBad = ssys->calculateFaileds ? true : false;
+    bool andFindBad = (ssys->calculateFaileds != 0);
     SolveResult how = SYS.Solve(&g, NULL, &(ssys->dof), &bad, andFindBad, /*andFindFree=*/false);
 
     switch(how) {

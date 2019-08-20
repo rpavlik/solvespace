@@ -149,10 +149,9 @@ static bool RunCommand(const std::vector<std::string> args) {
         if(argn + 1 < args.size() && (args[argn] == "--chord-tol" ||
                                       args[argn] == "-t")) {
             argn++;
-            if(sscanf(args[argn].c_str(), "%lf", &chordTol) == 1) {
-                return true;
-            } else return false;
-        } else return false;
+            return (sscanf(args[argn].c_str(), "%lf", &chordTol) == 1);
+        }
+        return false;
     };
 
     unsigned width = 0, height = 0;
@@ -160,10 +159,9 @@ static bool RunCommand(const std::vector<std::string> args) {
         auto ParseSize = [&](size_t &argn) {
             if(argn + 1 < args.size() && args[argn] == "--size") {
                 argn++;
-                if(sscanf(args[argn].c_str(), "%ux%u", &width, &height) == 2) {
-                    return true;
-                } else return false;
-            } else return false;
+                return (sscanf(args[argn].c_str(), "%ux%u", &width, &height) == 2);
+            }
+            return false;
         };
 
         for(size_t argn = 2; argn < args.size(); argn++) {

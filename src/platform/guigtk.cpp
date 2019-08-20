@@ -1340,11 +1340,7 @@ public:
 
     bool RunModal() override {
         CheckForUntitledFile();
-        if(gtkDialog.run() == Gtk::RESPONSE_OK) {
-            return true;
-        } else {
-            return false;
-        }
+        return (gtkDialog.run() == Gtk::RESPONSE_OK);
     }
 };
 
@@ -1374,11 +1370,7 @@ public:
 
     bool RunModal() override {
         CheckForUntitledFile();
-        if(gtkNative->run() == Gtk::RESPONSE_ACCEPT) {
-            return true;
-        } else {
-            return false;
-        }
+        return (gtkNative->run() == Gtk::RESPONSE_ACCEPT);
     }
 };
 

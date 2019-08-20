@@ -400,12 +400,8 @@ void SSurface::IntersectAgainst(SSurface *b, SShell *agnstA, SShell *agnstB,
 
                 if(a == 0) {
                     Vector dp = nb.Cross(na);
-                    if(dp.Dot(startv) < 0) {
-                        // We want to march in the more inward direction.
-                        fwd = true;
-                    } else {
-                        fwd = false;
-                    }
+                    // We want to march in the more inward direction.
+                    fwd = (dp.Dot(startv) < 0);
                 }
 
                 int i;

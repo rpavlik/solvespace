@@ -57,19 +57,18 @@ bool SolveSpaceUI::GroupsInOrder(hGroup before, hGroup after) {
     if(!GroupExists(after)) return false;
     int beforep = SK.GetGroup(before)->order;
     int afterp = SK.GetGroup(after)->order;
-    if(beforep >= afterp) return false;
-    return true;
+    return beforep < afterp;
 }
 
 bool SolveSpaceUI::GroupExists(hGroup hg) {
     // A nonexistent group is not acceptable
-    return SK.group.FindByIdNoOops(hg) ? true : false;
+    return SK.group.FindByIdNoOops(hg) != nullptr;
 }
 bool SolveSpaceUI::EntityExists(hEntity he) {
     // A nonexstient entity is acceptable, though, usually just means it
     // doesn't apply.
     if(he == Entity::NO_ENTITY) return true;
-    return SK.entity.FindByIdNoOops(he) ? true : false;
+    return SK.entity.FindByIdNoOops(he) != nullptr;
 }
 
 bool SolveSpaceUI::PruneGroups(hGroup hg) {

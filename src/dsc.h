@@ -288,12 +288,8 @@ public:
     }
 
     void RemoveTagged() {
-        auto newEnd = std::remove_if(this->begin(), this->end(), [](T &t) {
-            if(t.tag) {
-                return true;
-            }
-            return false;
-        });
+        auto newEnd = std::remove_if(this->begin(), this->end(),
+                                     [](T &t) { return static_cast<bool>(t.tag); });
         auto oldEnd = this->end();
         n = newEnd - begin();
         if (newEnd != nullptr && oldEnd != nullptr) {
@@ -357,9 +353,8 @@ public:
     uint32_t MaximumId() {
         if(IsEmpty()) {
             return 0;
-        } else {
-            return Last()->h.v;
         }
+        return Last()->h.v;
     }
 
     H AddAndAssignId(T *t) {

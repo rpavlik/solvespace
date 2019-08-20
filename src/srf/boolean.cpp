@@ -229,8 +229,7 @@ static bool KeepEdge(SSurface::CombineAs type, bool opA,
 
     // If the regions to the left and right of this edge are both in or both
     // out, then this edge is not useful and should be discarded.
-    if(keepIn && !keepOut) return true;
-    return false;
+    return (keepIn && !keepOut);
 }
 
 static void TagByClassifiedEdge(SBspUv::Class bspclass, SShell::Class *indir, SShell::Class *outdir)
@@ -884,7 +883,6 @@ void SBspUv::InsertEdge(Point2d ea, Point2d eb, SSurface *srf) {
             pos = InsertOrCreateEdge(pos, pi, eb, srf);
         }
     }
-    return;
 }
 
 SBspUv::Class SBspUv::ClassifyPoint(Point2d p, Point2d eb, SSurface *srf) const {

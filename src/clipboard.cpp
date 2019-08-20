@@ -172,7 +172,8 @@ void GraphicsWindow::PasteClipboard(Vector trans, double theta, double scale) {
             if(r->type == Request::Type::ARC_OF_CIRCLE) {
                 if(he == hr.entity(2)) {
                     return hr.entity(3);
-                } else if(he == hr.entity(3)) {
+                }
+                if(he == hr.entity(3)) {
                     return hr.entity(2);
                 }
             }
