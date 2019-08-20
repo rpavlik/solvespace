@@ -48,7 +48,7 @@ bool Group::IsVisible() {
     return (order <= active->order);
 }
 
-size_t Group::GetNumConstraints(void) {
+size_t Group::GetNumConstraints() {
     return SK.constraint.CountIf([&](Constraint const & c) { return c.group == h; });
 }
 
