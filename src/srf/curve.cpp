@@ -472,7 +472,7 @@ void SBezierLoop::MakePwlInto(SContour *sc, double chordTol) const {
 }
 
 bool SBezierLoop::IsClosed() const {
-    if(l.n < 1) return false;
+    if(l.IsEmpty()) return false;
     Vector s = l[0].Start(),
            f = l[l.n-1].Finish();
     return s.Equals(f);
@@ -493,7 +493,7 @@ SBezierLoopSet SBezierLoopSet::From(SBezierList *sbl, SPolygon *poly,
     SBezierLoopSet ret = {};
 
     *allClosed = true;
-    while(sbl->l.n > 0) {
+    while(!sbl->l.IsEmpty()) {
         bool thisClosed;
         SBezierLoop loop;
         loop = SBezierLoop::FromCurves(sbl, &thisClosed, errorAt);
