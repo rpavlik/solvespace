@@ -282,21 +282,20 @@ public:
     }
 
     void RemoveTagged() {
-        int src, dest;
-        dest = 0;
-        for(src = 0; src < n; src++) {
-            if(elem[src].tag) {
-                // this item should be deleted
-            } else {
-                if(src != dest) {
-                    elem[dest] = elem[src];
-                }
-                dest++;
+        auto newEnd = std::remove_if(this->begin(), this->end(), [](T &t) {
+            if(t.tag) {
+                return true;
+            }
+            return false;
+        });
+        auto oldEnd = this->end();
+        n = newEnd - begin();
+        if (newEnd != nullptr && oldEnd != nullptr) {
+            while(newEnd != oldEnd) {
+                newEnd->~T();
+                ++newEnd;
             }
         }
-        for(int i = dest; i < n; i++)
-            elem[i].~T();
-        n = dest;
         // and elemsAllocated is untouched, because we didn't resize
     }
 
