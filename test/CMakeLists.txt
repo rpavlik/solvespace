@@ -72,6 +72,11 @@ add_executable(solvespace-testsuite
     ${testsuite_SOURCES}
     $<TARGET_PROPERTY:resources,EXTRA_SOURCES>)
 
+if(SANITIZER_COMPILER_FLAGS)
+    target_compile_options(solvespace-testsuite PRIVATE ${SANITIZER_COMPILER_FLAGS})
+    target_link_options(solvespace-testsuite PRIVATE ${SANITIZER_LINKER_FLAGS})
+endif()
+
 target_link_libraries(solvespace-testsuite
     solvespace-headless
     ${COVERAGE_LIBRARY})

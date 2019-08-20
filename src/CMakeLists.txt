@@ -329,7 +329,10 @@ if(ENABLE_GUI)
         ${solvespace_core_gl_SOURCES}
         ${platform_SOURCES}
         $<TARGET_PROPERTY:resources,EXTRA_SOURCES>)
-
+    if(SANITIZER_COMPILER_FLAGS)
+        target_compile_options(solvespace PRIVATE ${SANITIZER_COMPILER_FLAGS})
+        target_link_options(solvespace PRIVATE ${SANITIZER_LINKER_FLAGS})
+    endif()
     add_dependencies(solvespace
         resources)
 
