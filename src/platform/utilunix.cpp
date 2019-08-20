@@ -76,9 +76,8 @@ void MemFree(void *p) {
 
 std::vector<std::string> InitPlatform(int argc, char **argv) {
     std::vector<std::string> args;
-    for(int i = 0; i < argc; i++) {
-        args.push_back(argv[i]);
-    }
+    args.reserve(argc);
+    for(int i = 0; i < argc; i++) { args.emplace_back(argv[i]); }
     return args;
 }
 
