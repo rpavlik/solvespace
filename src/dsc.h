@@ -200,36 +200,113 @@ public:
     Point2d Normal() const;
     bool Equals(Point2d v, double tol=LENGTH_EPS) const;
 };
+template<class T>
+struct ListStorage {
+    public:
+    std::vector<T> vec;
+    private:
+    int internalN = 0;
+    public:
+    ~ListStorage() {
+        Clear();
+    }
+    void Clear() {
+        for (auto & elt: vec) {
+            elt.Clear();
+        }
+        vec.clear();
+        UpdateSize();
+        
+    }
+    std::reference_wrapper<const int> MakeN() const {
+        return std::cref(internalN);
+    }
+    T & operator[](std::size_t i) {
+        return vec[i];
+    }
+
+    const T & operator[](std::size_t i) const {
+        return vec[i];
+    }
+    void AbandonElements() {
+        vec.clear();
+        UpdateSize();
+    }
+    void UpdateSize() {
+        internalN = static_cast<int>(vec.size());
+    }
+    template<typename Args...>
+    void EmplaceBack(Args && a...) {
+        vec.emplace_back(std::forward<Args>(a)...);
+        UpdateSize();
+    }
+    void PushBack(const T & val) {
+        vec.push_back(val);
+        UpdateSize();
+    }
+    void AllocForOneMore() {
+        
+        if(vec.capacity() == vec.size()) {
+            // Let the built-in growth policy deal with this.
+            vec.reserve(vec.size() + 1);
+        }
+    }
+
+    void ReserveMore(int howMuch) {
+        vec.reserve(vec.size() + howMuch);
+    }
+
+    void RemoveTagged() {
+        if(IsEmpty()) {
+            return;
+        }
+        int dest = 0;
+        for(int src = 0; src < n; src++) {
+            if((*vec)[src].tag) {
+                // this item should be deleted
+                (*vec)[src].Clear();
+            } else {
+                if(src != dest) {
+                    (*vec)[dest] = (*vec)[src];
+                }
+                dest++;
+            }
+        }
+        // resize will call the destructor
+        vec->resize(dest);
+        UpdateSize();
+    }
+};
 
 // A simple list
 template<class T>
 class List {
-    std::shared_ptr<std::vector<T>> vec;
-    int internalN = 0;
-    void UpdateSize() {
-        if(!vec) {
-            internalN = 0;
-        } else {
-            internalN = static_cast<int>(vec->size());
-        }
-    }
+    std::shared_ptr<ListStorage<T>> vec;
+    
     void AllocForOneMore() {
         if(!vec) {
-            vec = std::make_shared<std::vector<T>>();
+            Allocate();
         }
-        if(vec->capacity() == vec->size()) {
-            // Let the built-in growth policy deal with this.
-            vec->reserve(vec->size() + 1);
-        }
+        vec->AllocForOneMore();
     }
 
+    void Drop() {
+        // Avoids the built-in clear
+        vec->Abandon();
+    }
+
+    template<typename Args...>
+    void Allocate(Args&& a...) {
+        vec.reset(std::make_shared<ListStorage<T>>(std::forward(a)...);
+        n = vec->MakeN();
+    }
 public:
     std::reference_wrapper<const int> n;
 
-    List() : n(std::cref(internalN)) {}
+    List() : vec(std::make_shared<ListStorage<T>>()), n(vec->MakeN()) {}
 
     // Makes a shallow copy that shares the underlying list!
-    List(List const &other) : vec(other.vec), internalN(other.internalN), n(std::cref(internalN)) {}
+    List(List const &other) : vec(other.vec), n(vec->MakeN()) {}
 
     // Assigns a shallow copy that shares the underlying list!
     List &operator=(List const &other) {
@@ -238,15 +315,13 @@ public:
             return *this;
         }
         vec = other.vec;
-        UpdateSize();
+        n = vec->MakeN();
         return *this;
     }
 
     List(List &&other)
-        : vec(std::move(other.vec)), internalN(other.internalN), n(std::cref(internalN)) {
-        other.vec.reset();
-        UpdateSize();
-        other.UpdateSize();
+        : vec(std::move(other.vec)),  n(vec->MakeN()) {
+        other.Allocate();
     }
 
     List &operator=(List &&other) {
@@ -256,30 +331,26 @@ public:
         }
         Clear();
         vec = std::move(other.vec);
-        UpdateSize();
-        other.UpdateSize();
+        n = vec->MakeN();
+        other.Allocate();
         return *this;
     }
-    bool IsEmpty() const { return !vec || vec->empty(); }
+    bool IsEmpty() const { return !vec || vec->vec.empty(); }
 
     void ReserveMore(int howMuch) {
-        if(!vec) {
-            vec = std::make_shared<std::vector<T>>();
-        }
-        vec->reserve(n + howMuch);
+        vec->ReserveMore(howMuch);
     }
 
 
     void Add(const T *t) {
         AllocForOneMore();
-        vec->emplace_back(*t);
+        vec->EmplaceBack(*t);
         UpdateSize();
     }
 
     void AddToBeginning(const T *t) {
         AllocForOneMore();
-        vec->push_back({});
-        UpdateSize();
+        vec->PushBack({});
         std::move_backward(begin(), begin() + 1, end());
         *First() = *t;
     }
@@ -305,10 +376,10 @@ public:
 
     using iterator       = typename std::vector<T>::iterator;
     using const_iterator = typename std::vector<T>::const_iterator;
-    iterator begin() { return IsEmpty() ? iterator() : vec->begin(); }
-    iterator end() { return IsEmpty() ? iterator() : vec->end(); }
-    const_iterator begin() const { return IsEmpty() ? const_iterator() : vec->begin(); }
-    const_iterator end() const { return IsEmpty() ? const_iterator() : vec->end(); }
+    iterator begin() { return IsEmpty() ? iterator() : vec->vec.begin(); }
+    iterator end() { return IsEmpty() ? iterator() : vec->vec.end(); }
+    const_iterator begin() const { return IsEmpty() ? const_iterator() : vec->vec.begin(); }
+    const_iterator end() const { return IsEmpty() ? const_iterator() : vec->vec.end(); }
     const_iterator cbegin() const { return begin(); }
     const_iterator cend() const { return end(); }
 
@@ -319,8 +390,7 @@ public:
     }
 
     void Clear() {
-        vec.reset();
-        UpdateSize();
+        vec->Clear();
     }
 
     void RemoveTagged() {
