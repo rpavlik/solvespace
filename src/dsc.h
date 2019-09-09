@@ -366,6 +366,12 @@ struct CompareId {
 template <class T, class H>
 class IdList {
     std::shared_ptr<std::vector<T>> vec;
+    static void deleter(std::vector<T>* vec) {
+        for (auto & elt : *vec) {
+            elt.Clear();
+        }
+        delete vec;
+    }
     int internalN = 0;
     void UpdateSize() {
         if(!vec) {
@@ -376,7 +382,7 @@ class IdList {
     }
     void AllocForOneMore() {
         if(!vec) {
-            vec = std::make_shared<std::vector<T>>();
+            Allocate();
         }
         if(vec->capacity() == vec->size()) {
             // Let the built-in growth policy deal with this.
@@ -384,6 +390,16 @@ class IdList {
         }
     }
 
+    void Drop() {
+        // Avoids the built-in clear from the custom deleter.
+        auto ptr = vec.release();
+        delete ptr;
+    }
+
+    template<typename Args...>
+    void Allocate(Args&& a...) {
+        vec.reset(new std::vector<T>{std::forward(a)...}, &deleter);
+    }
 public:
     std::reference_wrapper<const int> n = std::cref(internalN);
 
@@ -468,7 +484,7 @@ public:
 
     void ReserveMore(int howMuch) {
         if(!vec) {
-            vec = std::make_shared<std::vector<T>>();
+            Allocate();
         }
         vec->reserve(n + howMuch);
     }
@@ -504,7 +520,7 @@ public:
         /// @todo Look to see if we already have something with the same handle value.
 
         // Just drop, don't clear.
-        vec.reset();
+        Drop();
         UpdateSize();
     }
 
@@ -607,7 +623,6 @@ public:
     void MoveSelfInto(IdList<T,H> *l) {
         l->Clear();
         l->vec = std::move(vec);
-        vec.reset();
         l->UpdateSize();
         UpdateSize();
     }
@@ -615,16 +630,19 @@ public:
     void DeepCopyInto(IdList<T,H> *l) {
         l->Clear();
         if(!IsEmpty()) {
-            l->vec = std::make_shared<std::vector<T>>(*vec);
+            l->Allocate(*vec);
         }
         l->UpdateSize();
     }
 
     void Clear() {
+        if(vec != nullptr) {
+            ssassert(vec.unique(), "Only expected to Clear uniquely-held lists!");
+        }
         if(IsEmpty()) {
             return;
         }
-        std::for_each(begin(), end(), [](T &elt) { elt.Clear(); });
+        // std::for_each(begin(), end(), [](T &elt) { elt.Clear(); });
         vec.reset();
         UpdateSize();
     }
