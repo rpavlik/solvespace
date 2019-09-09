@@ -200,15 +200,199 @@ public:
     Point2d Normal() const;
     bool Equals(Point2d v, double tol=LENGTH_EPS) const;
 };
+#undef SOLVESPACE_VERIFY_LIST_USAGE
+#undef SOLVESPACE_VERIFY_LIST_USAGE_STRICT
+#ifdef SOLVESPACE_VERIFY_LIST_USAGE
+template<typename T>
+class HasClear {
+private:
+    typedef std::true_type yes;
+    typedef std::false_type no;
+    // This overload only available if the type has a Clear() member function.
+    // The comma in the expression makes it return bool anyway.
+    template<typename U>
+    static decltype(std::declval<U &>().Clear(), yes()) TestClear(int);
+    // This overload is always available but lowest priority.
+    template<typename U>
+    static no TestClear(...);
+
+public:
+    static constexpr bool value = std::is_same<decltype(TestClear<T>(0)), yes>::value;
+};
+#endif // SOLVESPACE_VERIFY_LIST_USAGE
+
+// Cleanup policy for SharedListStorage used by List:
+// does no cleanup.
+struct NullCleanup {
+    template<class T>
+    static void Cleanup(T & /* val */) {
+    }
+};
+
+// Cleanup policy for SharedListStorage used by IdList:
+// calls Clear() on each member before removal.
+struct ClearCleanup {
+    template<class T>
+    static void Cleanup(T &val) {
+        val.Clear();
+    }
+};
+
+template<class T, typename Cleanup = NullCleanup>
+struct SharedListStorage {
+public:
+    std::vector<T> vec;
+
+private:
+    int internalN = 0;
+
+public:
+    SharedListStorage()                          = default;
+    SharedListStorage(const SharedListStorage &) = delete;
+    SharedListStorage(SharedListStorage &&)      = delete;
+    SharedListStorage &operator=(const SharedListStorage &) = delete;
+    SharedListStorage &operator=(SharedListStorage &&) = delete;
+
+    ~SharedListStorage() {
+        Clear();
+    }
+
+    // Calls any cleanup on each element (depends on template type Cleanup),
+    // then clears the list.
+    void Clear() {
+        for(auto &elt : vec) {
+            Cleanup::Cleanup(elt);
+        }
+        vec.clear();
+        UpdateSize();
+    }
+
+    // Returns a reference wrapper that can be used to provide a "size" or "n" member that acts like
+    // a data member.
+    std::reference_wrapper<const int> MakeN() const {
+        return std::cref(internalN);
+    }
+
+    // Element access.
+    T &operator[](std::size_t i) {
+        return vec[i];
+    }
+    // Element access (const).
+    const T &operator[](std::size_t i) const {
+        return vec[i];
+    }
+
+    // Clears the list *without* calling cleanup on the elements.
+    // Typically only used if ownership is being transfered to another list.
+    void AbandonElements() {
+        vec.clear();
+        UpdateSize();
+    }
+
+    // Update the backing variable supporting the MakeN()-returned reference wrapper.
+    // Must be called after each size-changing operation.
+    // All size-changing member functions do this.
+    void UpdateSize() {
+        internalN = static_cast<int>(vec.size());
+    }
+
+    // Forwards to std::vector<>::emplace_back to construct new element in place
+    template<typename... Args>
+    void EmplaceBack(Args &&... a) {
+        vec.emplace_back(std::forward<Args>(a)...);
+        UpdateSize();
+    }
+
+    // Forwards to std::vector<>::push_back
+    void PushBack(const T &val) {
+        vec.push_back(val);
+        UpdateSize();
+    }
+
+    // Uses std::vector::insert at .begin()
+    // Theoretically up to O(n) because of moving things...
+    void PushFront(const T &val) {
+        vec.insert(vec.begin(), val);
+        UpdateSize();
+    }
+
+    // If the capacity and size are the same, requests a re-allocation by the vector.
+    void AllocForOneMore() {
+
+        if(vec.capacity() == vec.size()) {
+            // Let the built-in growth policy deal with this.
+            vec.reserve(vec.size() + 1);
+        }
+    }
+
+    // Reserves a minimum of the given number of additional elements.
+    void ReserveMore(int howMuch) {
+        vec.reserve(vec.size() + howMuch);
+    }
+
+    bool IsEmpty() const {
+        return vec.empty();
+    }
+
+    // Removes elements with .tag = 1, performing cleanup if configured to do so.
+    void RemoveTagged() {
+        if(IsEmpty()) {
+            return;
+        }
+        int dest = 0;
+        int n    = vec.size();
+        for(int src = 0; src < n; src++) {
+            if(vec[src].tag) {
+                // this item should be deleted
+                Cleanup::Cleanup(vec[src]);
+            } else {
+                if(src != dest) {
+                    vec[dest] = vec[src];
+                }
+                dest++;
+            }
+        }
+        // resize will call the destructor
+        vec.resize(dest);
+        UpdateSize();
+    }
+
+    // Removes the last element, performing cleanup if configured to do so.
+    void PopBack() {
+        if(IsEmpty()) {
+            return;
+        }
+        Cleanup::Cleanup(vec.back());
+        vec.pop_back();
+        UpdateSize();
+    }
+
+    // Removes the last cnt elements (starting with the last), performing cleanup if configured to
+    // do so.
+    void RemoveLast(int cnt) {
+        int n = vec.size();
+        ssassert(n >= cnt, "Removing more elements than the list contains");
+        if(IsEmpty()) {
+            return;
+        }
+        for(int i = 0; i < cnt; ++i) {
+            PopBack();
+        }
+    }
+};
 
 // A simple list
 template<class T>
 class List {
     T *elem            = nullptr;
     int elemsAllocated = 0;
-
+#ifdef SOLVESPACE_VERIFY_LIST_USAGE_STRICT
+    static_assert(HasClear<T>::value == false,
+                  "The List class template does not Clear() before deleting!");
+#endif // SOLVESPACE_VERIFY_LIST_USAGE
 public:
     int  n = 0;
+
 
     bool IsEmpty() const { return n == 0; }
 
@@ -336,26 +520,63 @@ struct CompareId {
     }
 };
 
+
 // A list, where each element has an integer identifier. The list is kept
 // sorted by that identifier, and items can be looked up in log n time by
 // id.
-template <class T, class H>
+template<class T, class H>
 class IdList {
-    T *elem            = nullptr;
-    int elemsAllocated = 0;
+#ifdef SOLVESPACE_VERIFY_LIST_USAGE
+    static_assert(HasClear<T>::value,
+                  "The IdList class template requires Clear(), which it calls before deleting!");
+#endif // SOLVESPACE_VERIFY_LIST_USAGE
+    std::shared_ptr<SharedListStorage<T, ClearCleanup>> storage;
+
+    // DO NOT MODIFY this value - exists solely to provide a place to point the "n"
+    // reference when we have no storage.
+    int dummyN = 0;
+    void Allocate() {
+        storage = std::make_shared<SharedListStorage<T, ClearCleanup>>();
+        n       = storage->MakeN();
+    }
+    void EnsureAllocated() {
+        if(storage == nullptr) {
+            Allocate();
+        }
+    }
+
+    // Releases our reference to the list. If ours was the last remaining
+    // reference to the list, it will be destroyed. Clear() will be called on all elements
+    // before destruction.
+    void Reset() {
+        storage.reset();
+        n = std::cref(dummyN);
+    }
+
 public:
-    int n = 0;
+    std::reference_wrapper<const int> n;
 
     using Compare = CompareId<T, H>;
 
+    IdList()
+        : storage(std::make_shared<SharedListStorage<T, ClearCleanup>>()), n(storage->MakeN()) {
+    }
+    IdList(IdList const &) = default;
+    IdList &operator=(IdList const &) = default;
+    IdList(IdList &&)                 = default;
+    IdList &operator=(IdList &&) = default;
+
     bool IsEmpty() const {
+        if(storage == nullptr) {
+            return true;
+        }
+
         return n == 0;
     }
 
     void AllocForOneMore() {
-        if(n >= elemsAllocated) {
-            ReserveMore((elemsAllocated + 32)*2 - n);
-        }
+        EnsureAllocated();
+        storage->AllocForOneMore();
     }
 
     uint32_t MaximumId() {
@@ -399,16 +620,8 @@ public:
         return i;
     }
     void ReserveMore(int howMuch) {
-        if(n + howMuch > elemsAllocated) {
-            elemsAllocated = n + howMuch;
-            T *newElem = (T *)MemAlloc((size_t)elemsAllocated*sizeof(T));
-            for(int i = 0; i < n; i++) {
-                new(&newElem[i]) T(std::move(elem[i]));
-                elem[i].~T();
-            }
-            MemFree(elem);
-            elem = newElem;
-        }
+        EnsureAllocated();
+        storage->ReserveMore(howMuch);
     }
 
     void Add(T *t) {
@@ -418,8 +631,7 @@ public:
         ssassert(FindByIdNoOops(t->h) == nullptr, "Handle isn't unique");
 
         // Copy-construct at the end of the list.
-        new(&elem[n]) T(*t);
-        ++n;
+        storage->EmplaceBack(*t);
         // The item we just added is trivially sorted, so "merge"
         std::inplace_merge(begin(), end() - 1, end(), Compare());
     }
@@ -457,10 +669,10 @@ public:
     }
 
     T *First() {
-        return (IsEmpty()) ? NULL : &(elem[0]);
+        return (IsEmpty()) ? NULL : &((*storage)[0]);
     }
     T *Last() {
-        return (IsEmpty()) ? NULL : &(elem[n-1]);
+        return (IsEmpty()) ? NULL : &((*storage)[n - 1]);
     }
     T *NextAfter(T *prev) {
         if(IsEmpty() || !prev) return NULL;
@@ -468,15 +680,25 @@ public:
         return prev + 1;
     }
 
-    T &Get(size_t i) { return elem[i]; }
-    T const &Get(size_t i) const { return elem[i]; }
-    T &operator[](size_t i) { return Get(i); }
-    T const &operator[](size_t i) const { return Get(i); }
+    T &Get(size_t i) {
+        ssassert(i < (size_t)n, "Index out of range.");
+        return (*this)[i];
+    }
+    T const &Get(size_t i) const {
+        ssassert(i < (size_t)n, "Index out of range.");
+        return (*this)[i];
+    }
+    T &operator[](size_t i) {
+        return (*storage)[i];
+    }
+    T const &operator[](size_t i) const {
+        return (*storage)[i];
+    }
 
-    T *begin() { return IsEmpty() ? nullptr : &elem[0]; }
-    T *end() { return IsEmpty() ? nullptr : &elem[0] + n; }
-    const T *begin() const { return IsEmpty() ? nullptr : &elem[0]; }
-    const T *end() const { return IsEmpty() ? nullptr : &elem[0] + n; }
+    T *begin() { return IsEmpty() ? nullptr : &((*storage)[0]); }
+    T *end() { return IsEmpty() ? nullptr : begin() + n; }
+    const T *begin() const { return IsEmpty() ? nullptr : &((*storage)[0]); }
+    const T *end() const { return IsEmpty() ? nullptr : begin() + n; }
     const T *cbegin() const { return begin(); }
     const T *cend() const { return end(); }
 
@@ -492,23 +714,9 @@ public:
     }
 
     void RemoveTagged() {
-        int src, dest;
-        dest = 0;
-        for(src = 0; src < n; src++) {
-            if(elem[src].tag) {
-                // this item should be deleted
-                elem[src].Clear();
-            } else {
-                if(src != dest) {
-                    elem[dest] = elem[src];
-                }
-                dest++;
-            }
+        if(storage) {
+            storage->RemoveTagged();
         }
-        for(int i = dest; i < n; i++)
-            elem[i].~T();
-        n = dest;
-        // and elemsAllocated is untouched, because we didn't resize
     }
     void RemoveById(H h) {
         ClearTags();
@@ -518,28 +726,31 @@ public:
 
     void MoveSelfInto(IdList<T,H> *l) {
         l->Clear();
-        std::swap(l->elem, elem);
-        std::swap(l->elemsAllocated, elemsAllocated);
+        std::swap(l->storage, storage);
         std::swap(l->n, n);
+        Reset();
     }
 
     void DeepCopyInto(IdList<T,H> *l) {
         l->Clear();
-        l->elem = (T *)MemAlloc(elemsAllocated * sizeof(elem[0]));
-        for(int i = 0; i < n; i++)
-            new(&l->elem[i]) T(elem[i]);
-        l->elemsAllocated = elemsAllocated;
-        l->n = n;
+        l->ReserveMore(n);
+        for(auto &elt : *this) {
+            l->storage->EmplaceBack(elt);
+        }
     }
 
+    // Calls Clear() on all elements and removes them from the list,
+    // then releases our reference to the list.
+    // Other locations may still hold a reference to the list,
+    // but the list is now empty.
     void Clear() {
-        for(int i = 0; i < n; i++) {
-            elem[i].Clear();
-            elem[i].~T();
+        if(storage) {
+            // Performing this separately, first, means that even if this isn't
+            // the last reference (shallow copy) to this list,
+            // it will still have all its contents removed.
+            storage->Clear();
         }
-        if(elem) MemFree(elem);
-        elem = NULL;
-        elemsAllocated = n = 0;
+        Reset();
     }
 
 };
