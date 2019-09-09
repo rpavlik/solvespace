@@ -129,7 +129,9 @@ class SBezierList {
 public:
     List<SBezier>   l;
 
-    void Clear();
+    void Clear() {
+        l.Clear();
+    }
     void ScaleSelfBy(double s);
     void CullIdenticalBeziers(bool both=true);
     void AllIntersectionsWith(SBezierList *sblb, SPointList *spl) const;
@@ -167,7 +169,12 @@ public:
     void GetBoundingProjd(Vector u, Vector orig, double *umin, double *umax) const;
     double SignedArea();
     void MakePwlInto(SPolygon *sp) const;
-    void Clear();
+    void Clear() {
+        for(auto &loop : l) {
+            loop.Clear();
+        }
+        l.Clear();
+    }
 };
 
 class SBezierLoopSetSet {
@@ -180,7 +187,14 @@ public:
                             bool *allCoplanar, Vector *notCoplanarAt,
                             SBezierLoopSet *openContours);
     void AddOpenPath(SBezier *sb);
-    void Clear();
+    void Clear() {
+        for(auto &ls : l) {
+            ls.Clear();
+        }
+        // SBezierLoopSet *sbls;
+        // for(sbls = l.First(); sbls; sbls = l.NextAfter(sbls)) { sbls->Clear(); }
+        l.Clear();
+    }
 };
 
 // Stuff for the surface trim curves: piecewise linear
@@ -222,7 +236,9 @@ public:
     SSurface *GetSurfaceA(SShell *a, SShell *b) const;
     SSurface *GetSurfaceB(SShell *a, SShell *b) const;
 
-    void Clear();
+    void Clear() {
+        pts.Clear();
+    }
 };
 
 // A segment of a curve by which a surface is trimmed: indicates which curve,
@@ -370,7 +386,9 @@ public:
     Vector PointAtMaybeSwapped(double u, double v, bool swapped) const;
 
     void Reverse();
-    void Clear();
+    void Clear() {
+        trim.Clear();
+    }
 };
 
 class SShell {
@@ -431,7 +449,16 @@ public:
     void MakeSectionEdgesInto(Vector n, double d, SEdgeList *sel, SBezierList *sbl);
     bool IsEmpty() const;
     void RemapFaces(Group *g, int remap);
-    void Clear();
+    void Clear() {
+        // for (auto & s : surface) {
+        //     s.Clear();
+        // }
+        surface.Clear();
+        // for (auto & c : curve) {
+        //     c.Clear();
+        // }
+        curve.Clear();
+    }
 };
 
 #endif

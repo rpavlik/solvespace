@@ -209,10 +209,6 @@ bool SEdge::EdgeCrosses(Vector ea, Vector eb, Vector *ppi, SPointList *spl) cons
     return false;
 }
 
-void SEdgeList::Clear() {
-    l.Clear();
-}
-
 void SEdgeList::AddEdge(Vector a, Vector b, int auxA, int auxB, int tag) {
     SEdge e = {};
     e.tag = tag;
@@ -515,10 +511,6 @@ void SEdgeList::MergeCollinearSegments(Vector a, Vector b) {
     l.RemoveTagged();
 }
 
-void SPointList::Clear() {
-    l.Clear();
-}
-
 bool SPointList::ContainsPoint(Vector pt) const {
     return (IndexForPoint(pt) >= 0);
 }
@@ -657,15 +649,6 @@ bool SContour::ContainsPointProjdToNormal(Vector n, Vector p) const {
 
 void SContour::Reverse() {
     l.Reverse();
-}
-
-
-void SPolygon::Clear() {
-    int i;
-    for(i = 0; i < l.n; i++) {
-        (l[i]).l.Clear();
-    }
-    l.Clear();
 }
 
 void SPolygon::AddEmptyContour() {

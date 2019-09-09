@@ -8,10 +8,6 @@
 
 #include <set>
 
-void SMesh::Clear() {
-    l.Clear();
-}
-
 void SMesh::AddTriangle(STriMeta meta, Vector n, Vector a, Vector b, Vector c) {
     Vector ab = b.Minus(a), bc = c.Minus(b);
     Vector np = ab.Cross(bc);
@@ -1080,10 +1076,6 @@ bool SOutline::IsVisible(Vector projDir) const {
     double rdot = nr.Dot(projDir);
     return (ldot > -LENGTH_EPS) == (rdot < LENGTH_EPS) ||
            (rdot > -LENGTH_EPS) == (ldot < LENGTH_EPS);
-}
-
-void SOutlineList::Clear() {
-    l.Clear();
 }
 
 void SOutlineList::AddEdge(Vector a, Vector b, Vector nl, Vector nr, int tag) {

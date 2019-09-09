@@ -13,27 +13,6 @@ const hParam   Param::NO_PARAM = { 0 };
 
 const hGroup Group::HGROUP_REFERENCES = { 1 };
 
-//-----------------------------------------------------------------------------
-// The group structure includes pointers to other dynamically-allocated
-// memory. This clears and frees them all.
-//-----------------------------------------------------------------------------
-void Group::Clear() {
-    polyLoops.Clear();
-    bezierLoops.Clear();
-    bezierOpens.Clear();
-    thisMesh.Clear();
-    runningMesh.Clear();
-    thisShell.Clear();
-    runningShell.Clear();
-    displayMesh.Clear();
-    displayOutlines.Clear();
-    impMesh.Clear();
-    impShell.Clear();
-    impEntity.Clear();
-    // remap is the only one that doesn't get recreated when we regen
-    remap.clear();
-}
-
 void Group::AddParam(IdList<Param,hParam> *param, hParam hp, double v) {
     Param pa = {};
     pa.h = hp;

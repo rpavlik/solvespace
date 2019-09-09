@@ -485,10 +485,6 @@ void SSurface::ScaleSelfBy(double s) {
     }
 }
 
-void SSurface::Clear() {
-    trim.Clear();
-}
-
 typedef struct {
     hSCurve     hc;
     hSSurface   hs;
@@ -1051,16 +1047,3 @@ bool SShell::IsEmpty() const {
     return surface.IsEmpty();
 }
 
-void SShell::Clear() {
-    SSurface *s;
-    for(s = surface.First(); s; s = surface.NextAfter(s)) {
-        s->Clear();
-    }
-    surface.Clear();
-
-    SCurve *c;
-    for(c = curve.First(); c; c = curve.NextAfter(c)) {
-        c->Clear();
-    }
-    curve.Clear();
-}

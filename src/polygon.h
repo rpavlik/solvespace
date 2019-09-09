@@ -49,7 +49,9 @@ class SEdgeList {
 public:
     List<SEdge>     l;
 
-    void Clear();
+    void Clear() {
+        l.Clear();
+    }
     void AddEdge(Vector a, Vector b, int auxA=0, int auxB=0, int tag=0);
     bool AssemblePolygon(SPolygon *dest, SEdge *errorAt, bool keepDir=false) const;
     bool AssembleContour(Vector first, Vector last, SContour *dest,
@@ -105,7 +107,9 @@ class SPointList {
 public:
     List<SPoint>    l;
 
-    void Clear();
+    void Clear() {
+        l.Clear();
+    }
     bool ContainsPoint(Vector pt) const;
     int IndexForPoint(Vector pt) const;
     void IncrementTagFor(Vector pt);
@@ -154,7 +158,12 @@ public:
     bool ContainsPoint(Vector p) const;
     void MakeEdgesInto(SEdgeList *el) const;
     void FixContourDirections();
-    void Clear();
+    void Clear() {
+        for(auto &contour : l) {
+            contour.l.Clear();
+        }
+        l.Clear();
+    }
     bool SelfIntersecting(Vector *intersectsAt) const;
     bool IsEmpty() const;
     Vector AnyPoint() const;
@@ -256,7 +265,9 @@ public:
     bool    atLeastOneDiscarded;
     bool    isTransparent;
 
-    void Clear();
+    void Clear() {
+        l.Clear();
+    }
     void AddTriangle(const STriangle *st);
     void AddTriangle(STriMeta meta, Vector a, Vector b, Vector c);
     void AddTriangle(STriMeta meta, Vector n,
@@ -313,7 +324,9 @@ class SOutlineList {
 public:
     List<SOutline> l;
 
-    void Clear();
+    void Clear() {
+        l.Clear();
+    }
     void AddEdge(Vector a, Vector b, Vector nl, Vector nr, int tag = 0);
     void ListTaggedInto(SEdgeList *el, int auxA = 0, int auxB = 0);
 

@@ -257,7 +257,26 @@ public:
 
     void Activate();
     std::string DescriptionString();
-    void Clear();
+    void Clear() {
+        //-----------------------------------------------------------------------------
+        // The group structure includes pointers to other dynamically-allocated
+        // memory. This clears and frees them all.
+        //-----------------------------------------------------------------------------
+        polyLoops.Clear();
+        bezierLoops.Clear();
+        bezierOpens.Clear();
+        thisMesh.Clear();
+        runningMesh.Clear();
+        thisShell.Clear();
+        runningShell.Clear();
+        displayMesh.Clear();
+        displayOutlines.Clear();
+        impMesh.Clear();
+        impShell.Clear();
+        impEntity.Clear();
+        // remap is the only one that doesn't get recreated when we regen
+        remap.clear();
+    }
 
     static void AddParam(ParamList *param, hParam hp, double v);
     void Generate(EntityList *entity, ParamList *param);

@@ -218,9 +218,6 @@ bool SBezier::Equals(SBezier *b) const {
     return true;
 }
 
-void SBezierList::Clear() {
-    l.Clear();
-}
 
 void SBezierList::ScaleSelfBy(double s) {
     SBezier *sb;
@@ -557,13 +554,6 @@ void SBezierLoopSet::MakePwlInto(SPolygon *sp) const {
     }
 }
 
-void SBezierLoopSet::Clear() {
-    int i;
-    for(i = 0; i < l.n; i++) {
-        (l[i]).Clear();
-    }
-    l.Clear();
-}
 
 //-----------------------------------------------------------------------------
 // An export helper function. We start with a list of Bezier curves, and
@@ -728,13 +718,6 @@ void SBezierLoopSetSet::AddOpenPath(SBezier *sb) {
     l.Add(&sbls);
 }
 
-void SBezierLoopSetSet::Clear() {
-    SBezierLoopSet *sbls;
-    for(sbls = l.First(); sbls; sbls = l.NextAfter(sbls)) {
-        sbls->Clear();
-    }
-    l.Clear();
-}
 
 SCurve SCurve::FromTransformationOf(SCurve *a, Vector t,
                                     Quaternion q, double scale)
@@ -766,10 +749,6 @@ SCurve SCurve::FromTransformationOf(SCurve *a, Vector t,
         ret.pts.Add(&pp);
     }
     return ret;
-}
-
-void SCurve::Clear() {
-    pts.Clear();
 }
 
 SSurface *SCurve::GetSurfaceA(SShell *a, SShell *b) const {
