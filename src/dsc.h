@@ -558,8 +558,7 @@ public:
 
     using Compare = CompareId<T, H>;
 
-    IdList()
-        : storage(std::make_shared<SharedListStorage<T, ClearCleanup>>()), n(storage->MakeN()) {
+    IdList() : n(std::cref(dummyN)) {
     }
     IdList(IdList const &) = default;
     IdList &operator=(IdList const &) = default;
