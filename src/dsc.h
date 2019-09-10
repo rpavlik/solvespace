@@ -381,7 +381,7 @@ public:
     }
 };
 
-// A simple list
+// A simple list, where copies are by default shallow copies.
 template<class T>
 class List {
     T *elem            = nullptr;
