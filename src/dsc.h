@@ -582,9 +582,8 @@ public:
     uint32_t MaximumId() {
         if(IsEmpty()) {
             return 0;
-        } else {
-            return Last()->h.v;
         }
+        return Last()->h.v;
     }
 
     H AddAndAssignId(T *t) {
@@ -594,7 +593,7 @@ public:
         return t->h;
     }
 
-    T * LowerBound(T const& t) {
+    T *LowerBound(T const &t) {
         if(IsEmpty()) {
             return nullptr;
         }
@@ -602,7 +601,7 @@ public:
         return it;
     }
 
-    T * LowerBound(H const& h) {
+    T *LowerBound(H const &h) {
         if(IsEmpty()) {
             return nullptr;
         }
@@ -610,13 +609,13 @@ public:
         return it;
     }
 
-    int LowerBoundIndex(T const& t) {
+    int LowerBoundIndex(T const &t) {
         if(IsEmpty()) {
             return 0;
         }
-        auto it = LowerBound(t);
+        auto it  = LowerBound(t);
         auto idx = std::distance(begin(), it);
-        auto i = static_cast<int>(idx);
+        auto i   = static_cast<int>(idx);
         return i;
     }
     void ReserveMore(int howMuch) {
@@ -646,9 +645,9 @@ public:
         if(IsEmpty()) {
             return -1;
         }
-        auto it = LowerBound(h);
+        auto it  = LowerBound(h);
         auto idx = std::distance(begin(), it);
-        if (idx < n) {
+        if(idx < n) {
             return idx;
         }
         return -1;
@@ -659,10 +658,10 @@ public:
             return nullptr;
         }
         auto it = LowerBound(h);
-        if (it == nullptr || it == end()) {
+        if(it == nullptr || it == end()) {
             return nullptr;
         }
-        if (it->h.v == h.v) {
+        if(it->h.v == h.v) {
             return it;
         }
         return nullptr;
@@ -675,8 +674,10 @@ public:
         return (IsEmpty()) ? NULL : &((*storage)[n - 1]);
     }
     T *NextAfter(T *prev) {
-        if(IsEmpty() || !prev) return NULL;
-        if(prev - First() == (n - 1)) return NULL;
+        if(IsEmpty() || !prev)
+            return NULL;
+        if(prev - First() == (n - 1))
+            return NULL;
         return prev + 1;
     }
 
@@ -708,7 +709,7 @@ public:
 
     void Tag(H h, int tag) {
         auto it = FindByIdNoOops(h);
-        if (it != nullptr) {
+        if(it != nullptr) {
             it->tag = tag;
         }
     }
@@ -724,14 +725,14 @@ public:
         RemoveTagged();
     }
 
-    void MoveSelfInto(IdList<T,H> *l) {
+    void MoveSelfInto(IdList<T, H> *l) {
         l->Clear();
         std::swap(l->storage, storage);
         std::swap(l->n, n);
         Reset();
     }
 
-    void DeepCopyInto(IdList<T,H> *l) {
+    void DeepCopyInto(IdList<T, H> *l) {
         l->Clear();
         l->ReserveMore(n);
         for(auto &elt : *this) {
@@ -752,7 +753,6 @@ public:
         }
         Reset();
     }
-
 };
 
 class BandedMatrix {
