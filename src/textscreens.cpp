@@ -168,7 +168,7 @@ void TextWindow::ShowListOfGroups() {
 // user to edit various things about it.
 //-----------------------------------------------------------------------------
 void TextWindow::ScreenHoverConstraint(int link, uint32_t v) {
-    if(!SS.GW.showConstraints) return;
+    if(SS.GW.showConstraints == GraphicsWindow::ShowConstraintMode::SCM_NOSHOW) return;
 
     hConstraint hc = { v };
     SS.GW.hover.Clear();
