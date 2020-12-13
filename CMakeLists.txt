@@ -74,6 +74,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         # GCC 4.8/4.9 ship with broken but present <regex>. meh.
         message(FATAL_ERROR "GCC 5.0+ is required")
     endif()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-var-tracking-assignments")
 endif()
 
 # common compiler flags
