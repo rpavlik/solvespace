@@ -167,7 +167,6 @@ enum class SolveResult : uint32_t {
     DIDNT_CONVERGE           = 10,
     REDUNDANT_OKAY           = 11,
     REDUNDANT_DIDNT_CONVERGE = 12,
-    TOO_MANY_UNKNOWNS        = 20
 };
 
 
