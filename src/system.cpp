@@ -9,6 +9,7 @@
 #include "solvespace.h"
 
 #include <Eigen/Core>
+#include <Eigen/SparseQR>
 
 // This tolerance is used to determine whether two (linearized) constraints
 // are linearly dependent. If this is too small, then we will attempt to
@@ -21,19 +22,25 @@ const double System::RANK_MAG_TOLERANCE = 1e-4;
 // always be much less than LENGTH_EPS, and in practice should be much less.
 const double System::CONVERGE_TOLERANCE = (LENGTH_EPS/(1e2));
 
-bool System::WriteJacobian(int tag) {
+void System::WriteJacobian(int tag) {
+    // Clear all
+    mat.param.clear();
+    mat.eq.clear();
+    mat.B.sym.clear();
 
-    int j = 0;
-    for(auto &p : param) {
-        if(j >= MAX_UNKNOWNS)
-            return false;
-
-        if(p.tag != tag)
-            continue;
-        mat.param[j] = p.h;
-        j++;
+    for(Param &p : param) {
+        if(p.tag != tag) continue;
+        mat.param.push_back(p.h);
     }
-    mat.n = j;
+    mat.n = mat.param.size();
+
+    for(Equation &e : eq) {
+        if(e.tag != tag) continue;
+        mat.eq.push_back(&e);
+    }
+    mat.m = mat.eq.size();
+    mat.A.sym = std::make_unique<Eigen::SparseMatrix<Expr *>>(mat.m, mat.n);
+    mat.A.sym->reserve(Eigen::VectorXi::Constant(mat.n, 10));
 
     // Fill the param id to index map
     std::map<uint32_t, int> paramToIndex;
@@ -41,21 +48,11 @@ bool System::WriteJacobian(int tag) {
         paramToIndex[mat.param[j].v] = j;
     }
 
-    i = 0;
-    Expr *zero = Expr::From(0.0);
-    for(a = 0; a < eq.n; a++) {
-        if(i >= MAX_UNKNOWNS) return false;
-
-        if(e.tag != tag)
-            continue;
-
-        mat.eq[i] = e.h;
-        Expr *f = e.e->FoldConstants();
+    for(size_t i = 0; i < mat.eq.size(); i++) {
+        Equation *e = mat.eq[i];
+        if(e->tag != tag) continue;
+        Expr *f = e->e->FoldConstants();
         f = f->DeepCopyWithParamsAsPointers(&param, &(SK.param));
-
-        for(j = 0; j < mat.n; j++) {
-            mat.A.sym[i][j] = zero;
-        }
 
         List<hParam> paramsUsed = {};
         f->ParamsUsedList(&paramsUsed);
@@ -65,24 +62,26 @@ bool System::WriteJacobian(int tag) {
             if(j == paramToIndex.end()) continue;
             Expr *pd = f->PartialWrt(p);
             pd = pd->FoldConstants();
-            mat.A.sym[i][j->second] = pd;
+            if(pd->IsZeroConst()) continue;
+            mat.A.sym->insert(i, j->second) = pd;
         }
-        paramsUsed.Clear();
-        mat.B.sym[i] = f;
-        i++;
+        mat.B.sym.push_back(f);
     }
-    mat.m = i;
-
-    return true;
 }
 
 void System::EvalJacobian() {
-    int i, j;
-    for(i = 0; i < mat.m; i++) {
-        for(j = 0; j < mat.n; j++) {
-            mat.A.num[i][j] = (mat.A.sym[i][j])->Eval();
+    using namespace Eigen;
+    mat.A.num = std::make_unique<Eigen::SparseMatrix<double>>(mat.m, mat.n);
+    int size = mat.A.sym->outerSize();
+
+    for(int k = 0; k < size; k++) {
+        for(SparseMatrix <Expr *>::InnerIterator it(*mat.A.sym, k); it; ++it) {
+            double value = it.value()->Eval();
+            if(EXACT(value == 0.0)) continue;
+            mat.A.num->insert(it.row(), it.col()) = value;
         }
     }
+    mat.A.num->makeCompressed();
 }
 
 bool System::IsDragged(hParam p) {
@@ -165,7 +164,7 @@ void System::SolveBySubstitution() {
             }
 
             if(a.v == b.v) {
-                teq->tag = EQ_SUBSTITUTED;
+                teq.tag = EQ_SUBSTITUTED;
                 continue;
             }
 
@@ -209,45 +208,15 @@ void System::SolveBySubstitution() {
 }
 
 //-----------------------------------------------------------------------------
-// Calculate the rank of the Jacobian matrix, by Gram-Schimdt orthogonalization
-// in place. A row (~equation) is considered to be all zeros if its magnitude
-// is less than the tolerance RANK_MAG_TOLERANCE.
+// Calculate the rank of the Jacobian matrix
 //-----------------------------------------------------------------------------
 int System::CalculateRank() {
-    // Actually work with magnitudes squared, not the magnitudes
-    double rowMag[MAX_UNKNOWNS] = {};
-    double tol = RANK_MAG_TOLERANCE*RANK_MAG_TOLERANCE;
-
-    int i, iprev, j;
-    int rank = 0;
-
-    for(i = 0; i < mat.m; i++) {
-        // Subtract off this row's component in the direction of any
-        // previous rows
-        for(iprev = 0; iprev < i; iprev++) {
-            if(rowMag[iprev] <= tol) continue; // ignore zero rows
-
-            double dot = 0;
-            for(j = 0; j < mat.n; j++) {
-                dot += (mat.A.num[iprev][j]) * (mat.A.num[i][j]);
-            }
-            for(j = 0; j < mat.n; j++) {
-                mat.A.num[i][j] -= (dot/rowMag[iprev])*mat.A.num[iprev][j];
-            }
-        }
-        // Our row is now normal to all previous rows; calculate the
-        // magnitude of what's left
-        double mag = 0;
-        for(j = 0; j < mat.n; j++) {
-            mag += (mat.A.num[i][j]) * (mat.A.num[i][j]);
-        }
-        if(mag > tol) {
-            rank++;
-        }
-        rowMag[i] = mag;
-    }
-
-    return rank;
+    using namespace Eigen;
+    if(mat.n == 0 || mat.m == 0) return 0;
+    SparseQR <SparseMatrix<double>, COLAMDOrdering<int>> solver;
+    solver.compute(*mat.A.num);
+    int result = solver.rank();
+    return result;
 }
 
 bool System::TestRank(int *dof) {
@@ -259,60 +228,16 @@ bool System::TestRank(int *dof) {
     return jacobianRank == mat.m;
 }
 
-bool System::SolveLinearSystem(double X[], double A[][MAX_UNKNOWNS],
-                               double B[], int n)
+bool System::SolveLinearSystem(const Eigen::SparseMatrix <double> &A,
+                               const Eigen::VectorXd &B, Eigen::VectorXd *X)
 {
-    // Gaussian elimination, with partial pivoting. It's an error if the
-    // matrix is singular, because that means two constraints are
-    // equivalent.
-    int i, j, ip, jp, imax = 0;
-    double max, temp;
-
-    for(i = 0; i < n; i++) {
-        // We are trying eliminate the term in column i, for rows i+1 and
-        // greater. First, find a pivot (between rows i and N-1).
-        max = 0;
-        for(ip = i; ip < n; ip++) {
-            if(fabs(A[ip][i]) > max) {
-                imax = ip;
-                max = fabs(A[ip][i]);
-            }
-        }
-        // Don't give up on a singular matrix unless it's really bad; the
-        // assumption code is responsible for identifying that condition,
-        // so we're not responsible for reporting that error.
-        if(fabs(max) < 1e-20) continue;
-
-        // Swap row imax with row i
-        for(jp = 0; jp < n; jp++) {
-            swap(A[i][jp], A[imax][jp]);
-        }
-        swap(B[i], B[imax]);
-
-        // For rows i+1 and greater, eliminate the term in column i.
-        for(ip = i+1; ip < n; ip++) {
-            temp = A[ip][i]/A[i][i];
-
-            for(jp = i; jp < n; jp++) {
-                A[ip][jp] -= temp*(A[i][jp]);
-            }
-            B[ip] -= temp*B[i];
-        }
-    }
-
-    // We've put the matrix in upper triangular form, so at this point we
-    // can solve by back-substitution.
-    for(i = n - 1; i >= 0; i--) {
-        if(fabs(A[i][i]) < 1e-20) continue;
-
-        temp = B[i];
-        for(j = n - 1; j > i; j--) {
-            temp -= X[j]*A[i][j];
-        }
-        X[i] = temp / A[i][i];
-    }
-
-    return true;
+    if(A.outerSize() == 0) return true;
+    using namespace Eigen;
+    SparseQR<SparseMatrix<double>, COLAMDOrdering<int>> solver;
+    //SimplicialLDLT<SparseMatrix<double>> solver;
+    solver.compute(A);
+    *X = solver.solve(B);
+    return (solver.info() == Success);
 }
 
 using EiMat = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
@@ -331,37 +256,38 @@ inline EiVecMap mapVector(double vec[System::MAX_UNKNOWNS], int n){
 }
 
 bool System::SolveLeastSquares() {
-    int r, c, i;
-
+    using namespace Eigen;
     // Scale the columns; this scale weights the parameters for the least
     // squares solve, so that we can encourage the solver to make bigger
     // changes in some parameters, and smaller in others.
-    for(c = 0; c < mat.n; c++) {
+    mat.scale = VectorXd(mat.n);
+    for(int c = 0; c < mat.n; c++) {
         if(IsDragged(mat.param[c])) {
             // It's least squares, so this parameter doesn't need to be all
             // that big to get a large effect.
-            mat.scale[c] = 1/20.0;
+            mat.scale[c] = 1 / 20.0;
         } else {
             mat.scale[c] = 1;
         }
-        for(r = 0; r < mat.m; r++) {
-            mat.A.num[r][c] *= mat.scale[c];
+    }
+
+    int size = mat.A.sym->outerSize();
+    for(int k = 0; k < size; k++) {
+        for(SparseMatrix<double>::InnerIterator it(*mat.A.num, k); it; ++it) {
+            it.valueRef() *= mat.scale[it.col()];
         }
     }
 
-    // Write A*A'
-    auto A = mapMatrix(mat.A.num, mat.m, mat.n);
-    mapMatrix(mat.AAt, mat.m, mat.m) = A * A.transpose();
+    SparseMatrix <double> AAt = *mat.A.num * mat.A.num->transpose();
+    AAt.makeCompressed();
+    VectorXd z(mat.n);
 
-    if(!SolveLinearSystem(mat.Z, mat.AAt, mat.B.num, mat.m)) return false;
+    if(!SolveLinearSystem(AAt, mat.B.num, &z)) return false;
 
-    // And multiply that by A' to get our solution.
-    for(c = 0; c < mat.n; c++) {
-        double sum = 0;
-        for(i = 0; i < mat.m; i++) {
-            sum += mat.A.num[i][c]*mat.Z[i];
-        }
-        mat.X[c] = sum * mat.scale[c];
+    mat.X = mat.A.num->transpose() * z;
+
+    for(int c = 0; c < mat.n; c++) {
+        mat.X[c] *= mat.scale[c];
     }
     return true;
 }
@@ -373,6 +299,7 @@ bool System::NewtonSolve(int tag) {
     int i;
 
     // Evaluate the functions at our operating point.
+    mat.B.num = Eigen::VectorXd(mat.m);
     for(i = 0; i < mat.m; i++) {
         mat.B.num[i] = (mat.B.sym[i])->Eval();
     }
@@ -553,9 +480,7 @@ SolveResult System::Solve(Group *g, int *rank, int *dof, List<hConstraint> *bad,
 
     // Now write the Jacobian for what's left, and do a rank test; that
     // tells us if the system is inconsistently constrained.
-    if(!WriteJacobian(0)) {
-        return SolveResult::TOO_MANY_UNKNOWNS;
-    }
+    WriteJacobian(0);
     // Clear dof value in order to have indication when dof is actually not calculated
     if(dof != NULL) *dof = -1;
     // We are suppressing or allowing redundant, so we no need to catch unsolveable + redundant
@@ -592,12 +517,12 @@ SolveResult System::Solve(Group *g, int *rank, int *dof, List<hConstraint> *bad,
 didnt_converge:
     SK.constraint.ClearTags();
     // Not using range-for here because index is used in additional ways
-    for(i = 0; i < eq.n; i++) {
+    for(i = 0; i < mat.eq.size(); i++) {
         if(fabs(mat.B.num[i]) > CONVERGE_TOLERANCE || IsReasonable(mat.B.num[i])) {
             // This constraint is unsatisfied.
-            if(!mat.eq[i].isFromConstraint()) continue;
+            if(!mat.eq[i]->h.isFromConstraint()) continue;
 
-            hConstraint hc = mat.eq[i].constraint();
+            hConstraint hc = mat.eq[i]->h.constraint();
             ConstraintBase *c = SK.constraint.FindByIdNoOops(hc);
             if(!c) continue;
             // Don't double-show constraints that generated multiple
@@ -623,19 +548,16 @@ SolveResult System::SolveRank(Group *g, int *rank, int *dof, List<hConstraint> *
 
     // Now write the Jacobian, and do a rank test; that
     // tells us if the system is inconsistently constrained.
-    if(!WriteJacobian(0)) {
-        return SolveResult::TOO_MANY_UNKNOWNS;
-    }
+    WriteJacobian(0);
 
     bool rankOk = TestRank(dof);
     if(!rankOk) {
         // When we are testing with redundant allowed, we don't want to have additional info
         // about redundants since this test is working only for single redundant constraint
         if(!g->suppressDofCalculation && !g->allowRedundant) {
-            if(andFindBad) FindWhichToRemoveToFixJacobian(g, bad, forceDofCheck);
+            if(andFindBad) FindWhichToRemoveToFixJacobian(g, bad, true);
         }
     } else {
-        if(dof) *dof = CalculateDof();
         MarkParamsFree(andFindFree);
     }
     return rankOk ? SolveResult::OKAY : SolveResult::REDUNDANT_OKAY;
@@ -646,6 +568,8 @@ void System::Clear() {
     param.Clear();
     eq.Clear();
     dragged.Clear();
+    mat.A.num.reset();
+    mat.A.sym.reset();
 }
 
 void System::MarkParamsFree(bool find) {
