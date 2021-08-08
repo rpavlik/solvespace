@@ -8,6 +8,8 @@
 //-----------------------------------------------------------------------------
 #include "solvespace.h"
 
+#include <memory>
+#include <Eigen/Core>
 #include <Eigen/SparseQR>
 
 // The solver will converge all unknowns to within this tolerance. This must
@@ -31,8 +33,7 @@ bool System::WriteJacobian(int tag) {
         mat.eq.push_back(&e);
     }
     mat.m = mat.eq.size();
-    delete mat.A.sym;
-    mat.A.sym = new Eigen::SparseMatrix<Expr *>(mat.m, mat.n);
+    mat.A.sym.reset(new Eigen::SparseMatrix<Expr *>(mat.m, mat.n));
     mat.A.sym->reserve(Eigen::VectorXi::Constant(mat.n, 10));
 
     // Fill the param id to index map
@@ -70,8 +71,7 @@ bool System::WriteJacobian(int tag) {
 
 void System::EvalJacobian() {
     using namespace Eigen;
-    delete mat.A.num;
-    mat.A.num = new Eigen::SparseMatrix<double>(mat.m, mat.n);
+    mat.A.num.reset(new Eigen::SparseMatrix<double>(mat.m, mat.n));
     int size = mat.A.sym->outerSize();
 
     for(int k = 0; k < size; k++) {
@@ -477,10 +477,8 @@ void System::Clear() {
     param.Clear();
     eq.Clear();
     dragged.Clear();
-    delete mat.A.num;
-    mat.A.num = NULL;
-    delete mat.A.sym;
-    mat.A.sym = NULL;
+    mat.A.num.reset();
+    mat.A.sym.reset();
 }
 
 void System::MarkParamsFree(bool find) {
