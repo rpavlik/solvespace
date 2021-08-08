@@ -242,6 +242,7 @@ public:
         // We're solving AX = B
         int m, n;
         struct {
+            // This only observes the Expr - does not own them!
             std::unique_ptr<Eigen::SparseMatrix<Expr *>> sym;
             std::unique_ptr<Eigen::SparseMatrix<double>> num;
         } A;
@@ -250,6 +251,7 @@ public:
         Eigen::VectorXd X;
 
         struct {
+            // This only observes the Expr - does not own them!
             std::vector<Expr *> sym;
             Eigen::VectorXd     num;
         } B;
