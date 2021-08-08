@@ -8,15 +8,9 @@
 //-----------------------------------------------------------------------------
 #include "solvespace.h"
 
+#include <memory>
 #include <Eigen/Core>
 #include <Eigen/SparseQR>
-
-// This tolerance is used to determine whether two (linearized) constraints
-// are linearly dependent. If this is too small, then we will attempt to
-// solve truly inconsistent systems and fail. But if it's too large, then
-// we will give up on legitimate systems like a skinny right angle triangle by
-// its hypotenuse and long side.
-const double System::RANK_MAG_TOLERANCE = 1e-4;
 
 // The solver will converge all unknowns to within this tolerance. This must
 // always be much less than LENGTH_EPS, and in practice should be much less.
@@ -39,7 +33,7 @@ void System::WriteJacobian(int tag) {
         mat.eq.push_back(&e);
     }
     mat.m = mat.eq.size();
-    mat.A.sym = std::make_unique<Eigen::SparseMatrix<Expr *>>(mat.m, mat.n);
+    mat.A.sym.reset(new Eigen::SparseMatrix<Expr *>(mat.m, mat.n));
     mat.A.sym->reserve(Eigen::VectorXi::Constant(mat.n, 10));
 
     // Fill the param id to index map
@@ -71,7 +65,7 @@ void System::WriteJacobian(int tag) {
 
 void System::EvalJacobian() {
     using namespace Eigen;
-    mat.A.num = std::make_unique<Eigen::SparseMatrix<double>>(mat.m, mat.n);
+    mat.A.num.reset(new Eigen::SparseMatrix<double>(mat.m, mat.n));
     int size = mat.A.sym->outerSize();
 
     for(int k = 0; k < size; k++) {
@@ -241,19 +235,8 @@ bool System::SolveLinearSystem(const Eigen::SparseMatrix <double> &A,
 }
 
 using EiMat = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-using EiMatMap = Eigen::Map<EiMat, Eigen::Unaligned, Eigen::OuterStride<System::MAX_UNKNOWNS> >;
 using EiVec = Eigen::VectorXd;
 using EiVecMap = Eigen::Map<EiVec>;
-
-// Wrap a matrix of a given size (that's stored within a 2D matrix of MAX_UNKNOWNS by MAX_UNKNOWNS) for use with Eigen.
-inline EiMatMap mapMatrix(double mat[System::MAX_UNKNOWNS][System::MAX_UNKNOWNS], int rows, int cols) {
-    return EiMatMap(&(mat[0][0]), rows, cols);
-}
-
-// Wrap a vector of a given size (that's stored within a vector of MAX_UNKNOWNS length) for use with Eigen.
-inline EiVecMap mapVector(double vec[System::MAX_UNKNOWNS], int n){
-    return EiVecMap(&(vec[0]), n);
-}
 
 bool System::SolveLeastSquares() {
     using namespace Eigen;
