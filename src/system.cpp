@@ -45,6 +45,7 @@ void System::WriteJacobian(int tag) {
     std::vector<hParam> paramsUsed;
     // A single possibly-too-large allocation is probably preferred here?
     mat.B.sym.reserve(mat.eq.size());
+    // std::vector<Eigen::Triplet<Expr *>> entries;
     for(size_t i = 0; i < mat.eq.size(); i++) {
         Equation *e = mat.eq[i];
         if(e->tag != tag) continue;
@@ -62,10 +63,13 @@ void System::WriteJacobian(int tag) {
             if(pd->IsZeroConst())
                 continue;
             mat.A.sym.insert(i, j->second) = pd;
+            // entries.push_back(Eigen::Triplet<Expr *>(i, j->second, pd));
         }
         paramsUsed.clear();
         mat.B.sym.push_back(f);
     }
+    // mat.A.sym.setFromTriplets(entries.begin(), entries.end());
+    mat.A.sym.makeCompressed();
 }
 
 void System::EvalJacobian() {
@@ -254,7 +258,9 @@ bool System::SolveLeastSquares() {
     }
 
     int size = mat.A.sym.outerSize();
+    // for (auto & triplet : mat.A.sym.)
     for(int k = 0; k < size; k++) {
+        // mat.A.num.
         for(SparseMatrix<double>::InnerIterator it(mat.A.num, k); it; ++it) {
             it.valueRef() *= mat.scale[it.col()];
         }
