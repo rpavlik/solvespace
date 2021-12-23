@@ -16,7 +16,7 @@
 // always be much less than LENGTH_EPS, and in practice should be much less.
 const double System::CONVERGE_TOLERANCE = (LENGTH_EPS/(1e2));
 
-bool System::WriteJacobian(int tag) {
+void System::WriteJacobian(int tag) {
     // Clear all
     mat.param.clear();
     mat.eq.clear();
@@ -42,9 +42,6 @@ bool System::WriteJacobian(int tag) {
         paramToIndex[mat.param[j].v] = j;
     }
 
-    if(mat.eq.size() >= MAX_UNKNOWNS) {
-        return false;
-    }
     for(size_t i = 0; i < mat.eq.size(); i++) {
         Equation *e = mat.eq[i];
         if(e->tag != tag) continue;
@@ -66,7 +63,6 @@ bool System::WriteJacobian(int tag) {
         paramsUsed.Clear();
         mat.B.sym.push_back(f);
     }
-    return true;
 }
 
 void System::EvalJacobian() {
@@ -465,9 +461,7 @@ SolveResult System::Solve(Group *g, int *rank, int *dof, List<hConstraint> *bad,
 
     // Now write the Jacobian for what's left, and do a rank test; that
     // tells us if the system is inconsistently constrained.
-    if(!WriteJacobian(0)) {
-        return SolveResult::TOO_MANY_UNKNOWNS;
-    }
+    WriteJacobian(0);
     // Clear dof value in order to have indication when dof is actually not calculated
     if(dof != NULL) *dof = -1;
     // We are suppressing or allowing redundant, so we no need to catch unsolveable + redundant
@@ -535,9 +529,7 @@ SolveResult System::SolveRank(Group *g, int *rank, int *dof, List<hConstraint> *
 
     // Now write the Jacobian, and do a rank test; that
     // tells us if the system is inconsistently constrained.
-    if(!WriteJacobian(0)) {
-        return SolveResult::TOO_MANY_UNKNOWNS;
-    }
+    WriteJacobian(0);
 
     bool rankOk = TestRank(dof);
     if(!rankOk) {

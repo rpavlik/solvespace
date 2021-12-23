@@ -168,7 +168,6 @@ enum class SolveResult : uint32_t {
     DIDNT_CONVERGE           = 10,
     REDUNDANT_OKAY           = 11,
     REDUNDANT_DIDNT_CONVERGE = 12,
-    TOO_MANY_UNKNOWNS        = 20
 };
 
 
@@ -214,7 +213,6 @@ void Error(const char *fmt, ...);
 
 class System {
 public:
-    enum { MAX_UNKNOWNS = 1024 };
 
     EntityList                      entity;
     ParamList                       param;
@@ -266,7 +264,7 @@ public:
                                   const Eigen::VectorXd &B, Eigen::VectorXd *X);
     bool SolveLeastSquares();
 
-    bool WriteJacobian(int tag);
+    void WriteJacobian(int tag);
     void EvalJacobian();
 
     void WriteEquationsExceptFor(hConstraint hc, Group *g);
