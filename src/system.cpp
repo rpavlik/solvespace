@@ -42,13 +42,16 @@ void System::WriteJacobian(int tag) {
         paramToIndex[mat.param[j].v] = j;
     }
 
+    std::vector<hParam> paramsUsed;
+    // A single possibly-too-large allocation is probably preferred here?
+    mat.B.sym.reserve(mat.eq.size());
     for(size_t i = 0; i < mat.eq.size(); i++) {
         Equation *e = mat.eq[i];
         if(e->tag != tag) continue;
         Expr *f = e->e->FoldConstants();
         f = f->DeepCopyWithParamsAsPointers(&param, &(SK.param));
 
-        List<hParam> paramsUsed = {};
+        paramsUsed.clear();
         f->ParamsUsedList(&paramsUsed);
 
         for(hParam &p : paramsUsed) {
@@ -60,7 +63,7 @@ void System::WriteJacobian(int tag) {
                 continue;
             mat.A.sym->insert(i, j->second) = pd;
         }
-        paramsUsed.Clear();
+        paramsUsed.clear();
         mat.B.sym.push_back(f);
     }
 }
