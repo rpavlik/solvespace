@@ -21,6 +21,7 @@ void System::WriteJacobian(int tag) {
     mat.param.clear();
     mat.eq.clear();
     mat.B.sym.clear();
+    mat.A.sym.reset();
 
     for(Param &p : param) {
         if(p.tag != tag) continue;
@@ -33,6 +34,11 @@ void System::WriteJacobian(int tag) {
         mat.eq.push_back(&e);
     }
     mat.m = mat.eq.size();
+
+    if (mat.eq.empty() || mat.param.empty()) {
+        dbp("WriteJacobian is empty");
+        return;
+    }
     mat.A.sym.reset(new Eigen::SparseMatrix<Expr *>(mat.m, mat.n));
     mat.A.sym->reserve(Eigen::VectorXi::Constant(mat.n, 10));
 
@@ -66,10 +72,16 @@ void System::WriteJacobian(int tag) {
         paramsUsed.clear();
         mat.B.sym.push_back(f);
     }
+    dbp("Reserved %d, used %d\n", mat.eq.size(), mat.B.sym.size());
 }
 
 void System::EvalJacobian() {
     using namespace Eigen;
+    mat.A.num.reset();
+    if(mat.A.sym == nullptr) {
+        dbp("Skipping evaluating empty jacobian");
+        return;
+    }
     mat.A.num.reset(new Eigen::SparseMatrix<double>(mat.m, mat.n));
     int size = mat.A.sym->outerSize();
 
@@ -240,29 +252,32 @@ bool System::SolveLinearSystem(const Eigen::SparseMatrix <double> &A,
 }
 
 bool System::SolveLeastSquares() {
+    if(mat.A.sym == nullptr) {
+        dbp("Skipping least-squares solve for empty jacobian");
+        return true;
+    }
     using namespace Eigen;
     // Scale the columns; this scale weights the parameters for the least
     // squares solve, so that we can encourage the solver to make bigger
     // changes in some parameters, and smaller in others.
-    mat.scale = VectorXd(mat.n);
+    mat.scale = VectorXd::Ones(mat.n);
     for(int c = 0; c < mat.n; c++) {
         if(IsDragged(mat.param[c])) {
             // It's least squares, so this parameter doesn't need to be all
             // that big to get a large effect.
             mat.scale[c] = 1/20.0;
-        } else {
-            mat.scale[c] = 1;
         }
-        }
+    }
 
-    int size = mat.A.sym->outerSize();
-    for(int k = 0; k < size; k++) {
-        for(SparseMatrix<double>::InnerIterator it(*mat.A.num, k); it; ++it) {
-            it.valueRef() *= mat.scale[it.col()];
+    if (mat.A.sym != nullptr) {
+        int size = mat.A.sym->outerSize();
+        for(int k = 0; k < size; k++) {
+            for(SparseMatrix<double>::InnerIterator it(*mat.A.num, k); it; ++it) {
+                it.valueRef() *= mat.scale[it.col()];
             }
         }
-
-    SparseMatrix <double> AAt = *mat.A.num * mat.A.num->transpose();
+    }
+    SparseMatrix<double> AAt = *mat.A.num * mat.A.num->transpose();
     AAt.makeCompressed();
     VectorXd z(mat.n);
 
@@ -577,4 +592,3 @@ void System::MarkParamsFree(bool find) {
         }
     }
 }
-
