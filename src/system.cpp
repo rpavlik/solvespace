@@ -244,14 +244,12 @@ bool System::SolveLeastSquares() {
     // Scale the columns; this scale weights the parameters for the least
     // squares solve, so that we can encourage the solver to make bigger
     // changes in some parameters, and smaller in others.
-    mat.scale = VectorXd(mat.n);
+    mat.scale = VectorXd::Ones(mat.n);
     for(int c = 0; c < mat.n; c++) {
         if(IsDragged(mat.param[c])) {
             // It's least squares, so this parameter doesn't need to be all
             // that big to get a large effect.
-            mat.scale[c] = 1/20.0;
-        } else {
-            mat.scale[c] = 1;
+            mat.scale[c] = 1 / 20.0;
         }
     }
 
